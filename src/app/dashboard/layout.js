@@ -18,9 +18,13 @@ export default function DashboardLayout({ children }) {
     }
 
     // Role-based route protection
-    const isTrainerOrCustomer = user.role === 'Trainer' || user.role === 'Customer';
-    if (isTrainerOrCustomer) {
+    if (user.role === 'Trainer') {
       const allowedPaths = ['/dashboard', '/dashboard/profile', '/dashboard/membership'];
+      if (!allowedPaths.includes(pathname)) {
+        router.push('/dashboard');
+      }
+    } else if (user.role === 'Customer') {
+      const allowedPaths = ['/dashboard', '/dashboard/profile', '/dashboard/membership', '/dashboard/inquiries'];
       if (!allowedPaths.includes(pathname)) {
         router.push('/dashboard');
       }

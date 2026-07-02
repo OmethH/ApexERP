@@ -7,6 +7,7 @@ import {
   payments as initialPayments,
   branches as initialBranches,
   packages as initialPackages,
+  initialInquiries,
 } from '@/data/mockData';
 
 const DataContext = createContext(null);
@@ -17,6 +18,7 @@ export function DataProvider({ children }) {
   const [paymentsList, setPaymentsList] = useState(initialPayments);
   const [branchesList, setBranchesList] = useState(initialBranches);
   const [packagesList, setPackagesList] = useState(initialPackages);
+  const [inquiries, setInquiries] = useState(initialInquiries);
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
@@ -25,11 +27,13 @@ export function DataProvider({ children }) {
     const savedPayments = localStorage.getItem('pw_payments');
     const savedBranches = localStorage.getItem('pw_branches');
     const savedPackages = localStorage.getItem('pw_packages');
+    const savedInquiries = localStorage.getItem('pw_inquiries');
 
     if (savedMembers) setMembers(JSON.parse(savedMembers));
     if (savedStaff) setStaffList(JSON.parse(savedStaff));
     if (savedPayments) setPaymentsList(JSON.parse(savedPayments));
     if (savedBranches) setBranchesList(JSON.parse(savedBranches));
+    if (savedInquiries) setInquiries(JSON.parse(savedInquiries));
     if (savedPackages) {
       const parsed = JSON.parse(savedPackages);
       const merged = parsed.map(pkg => {
@@ -69,6 +73,10 @@ export function DataProvider({ children }) {
   useEffect(() => {
     if (isLoaded) localStorage.setItem('pw_packages', JSON.stringify(packagesList));
   }, [packagesList, isLoaded]);
+
+  useEffect(() => {
+    if (isLoaded) localStorage.setItem('pw_inquiries', JSON.stringify(inquiries));
+  }, [inquiries, isLoaded]);
 
   // --- Member CRUD ---
   const addMember = useCallback((memberData) => {
@@ -198,6 +206,67 @@ export function DataProvider({ children }) {
     }
   }, [members]);
 
+  // --- Inquiry / Chat Actions ---
+  const addInquiry = useCallback((memberId, memberName, subject, content, senderId, senderRole) => {
+    const newInquiry = {
+      id: `INQ${String(inquiries.length + 1).padStart(3, '0')}`,
+      memberId,
+      memberName,
+      subject,
+      status: senderRole === 'Customer' ? 'sent' : 'open',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      messages: [
+        {
+          id: `MSG${String(Date.now())}`,
+          senderId,
+          senderName: memberName,
+          senderRole,
+          content,
+          timestamp: new Date().toISOString()
+        }
+      ]
+    };
+    setInquiries(prev => [newInquiry, ...prev]);
+    return newInquiry;
+  }, [inquiries.length]);
+
+  const addInquiryMessage = useCallback((inquiryId, senderId, senderName, senderRole, content) => {
+    setInquiries(prev => prev.map(inq => {
+      if (inq.id === inquiryId) {
+        const newMsg = {
+          id: `MSG${String(Date.now())}`,
+          senderId,
+          senderName,
+          senderRole,
+          content,
+          timestamp: new Date().toISOString()
+        };
+        const newStatus = (senderRole === 'Admin' || senderRole === 'Manager' || senderRole === 'Staff') ? 'replied' : 'sent';
+        return {
+          ...inq,
+          status: newStatus,
+          updatedAt: new Date().toISOString(),
+          messages: [...inq.messages, newMsg]
+        };
+      }
+      return inq;
+    }));
+  }, []);
+
+  const updateInquiryStatus = useCallback((inquiryId, status) => {
+    setInquiries(prev => prev.map(inq => {
+      if (inq.id === inquiryId) {
+        return {
+          ...inq,
+          status,
+          updatedAt: new Date().toISOString()
+        };
+      }
+      return inq;
+    }));
+  }, []);
+
   // --- Computed Stats ---
   const stats = useMemo(() => {
     const now = new Date();
@@ -253,6 +322,7 @@ export function DataProvider({ children }) {
     payments: paymentsList,
     branches: branchesList,
     packages: packagesList,
+    inquiries,
     stats,
     addMember,
     updateMember,
@@ -268,6 +338,9 @@ export function DataProvider({ children }) {
     addPackage,
     updatePackage,
     deletePackage,
+    addInquiry,
+    addInquiryMessage,
+    updateInquiryStatus,
   };
 
   return (
