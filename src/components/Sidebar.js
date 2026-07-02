@@ -13,22 +13,29 @@ import {
   Dumbbell,
   LogOut,
   X,
+  User,
 } from 'lucide-react';
 
 const navItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, section: 'Overview' },
-  { href: '/dashboard/members', label: 'Members', icon: Users, section: 'Management' },
-  { href: '/dashboard/branches', label: 'Branches', icon: Building2, section: 'Management' },
-  { href: '/dashboard/staff', label: 'Staff', icon: UserCog, section: 'Management' },
-  { href: '/dashboard/payments', label: 'Payments', icon: CreditCard, section: 'Finance' },
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, section: 'Overview', roles: ['Admin', 'Manager', 'Staff', 'Trainer', 'Customer'] },
+  { href: '/dashboard/members', label: 'Members', icon: Users, section: 'Management', roles: ['Admin', 'Manager', 'Staff'] },
+  { href: '/dashboard/branches', label: 'Branches', icon: Building2, section: 'Management', roles: ['Admin', 'Manager', 'Staff'] },
+  { href: '/dashboard/staff', label: 'Staff', icon: UserCog, section: 'Management', roles: ['Admin', 'Manager', 'Staff'] },
+  { href: '/dashboard/payments', label: 'Payments', icon: CreditCard, section: 'Finance', roles: ['Admin', 'Manager', 'Staff'] },
+  { href: '/dashboard/profile', label: 'My Profile', icon: User, section: 'Personal', roles: ['Admin', 'Manager', 'Staff', 'Trainer', 'Customer'] },
+  { href: '/dashboard/membership', label: 'Membership Status', icon: Dumbbell, section: 'Personal', roles: ['Trainer', 'Customer'] },
 ];
 
 export default function Sidebar({ isOpen, onClose }) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
 
+  // Filter items by role
+  const userRole = user?.role || 'Customer';
+  const filteredNavItems = navItems.filter(item => item.roles.includes(userRole));
+
   // Group nav items by section
-  const sections = navItems.reduce((acc, item) => {
+  const sections = filteredNavItems.reduce((acc, item) => {
     if (!acc[item.section]) acc[item.section] = [];
     acc[item.section].push(item);
     return acc;

@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { Dumbbell, Mail, Lock, AlertCircle, ChevronRight } from 'lucide-react';
+import { Dumbbell, Mail, Lock, AlertCircle } from 'lucide-react';
+import Link from 'next/link';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -22,12 +23,6 @@ export default function LoginPage() {
     } catch (err) {
       setError(err.message);
     }
-  };
-
-  const handleDemoLogin = (demoEmail, demoPassword) => {
-    setEmail(demoEmail);
-    setPassword(demoPassword);
-    setError('');
   };
 
   return (
@@ -120,39 +115,11 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Demo Accounts */}
-          <div className="demo-accounts">
-            <h3>Quick Demo Access</h3>
-            <button
-              className="demo-account-btn"
-              onClick={() => handleDemoLogin('admin@powerworld.com', 'admin123')}
-            >
-              <div>
-                <div className="role">👑 Admin</div>
-                <div className="email">admin@powerworld.com</div>
-              </div>
-              <ChevronRight size={16} color="var(--text-tertiary)" />
-            </button>
-            <button
-              className="demo-account-btn"
-              onClick={() => handleDemoLogin('manager@powerworld.com', 'manager123')}
-            >
-              <div>
-                <div className="role">🏢 Branch Manager</div>
-                <div className="email">manager@powerworld.com</div>
-              </div>
-              <ChevronRight size={16} color="var(--text-tertiary)" />
-            </button>
-            <button
-              className="demo-account-btn"
-              onClick={() => handleDemoLogin('staff@powerworld.com', 'staff123')}
-            >
-              <div>
-                <div className="role">💪 Staff</div>
-                <div className="email">staff@powerworld.com</div>
-              </div>
-              <ChevronRight size={16} color="var(--text-tertiary)" />
-            </button>
+          <div style={{ marginTop: '16px', textAlign: 'center', fontSize: '13px', color: 'var(--text-secondary)' }}>
+            New gym customer?{' '}
+            <Link href="/register" style={{ color: 'var(--accent-primary)', fontWeight: 600 }}>
+              Create Account
+            </Link>
           </div>
         </div>
       </div>

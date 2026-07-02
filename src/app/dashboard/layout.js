@@ -1,20 +1,31 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import Sidebar from '@/components/Sidebar';
 
 export default function DashboardLayout({ children }) {
   const { user } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (!user) {
       router.push('/login');
+      return;
     }
-  }, [user, router]);
+
+    // Role-based route protection
+    const isTrainerOrCustomer = user.role === 'Trainer' || user.role === 'Customer';
+    if (isTrainerOrCustomer) {
+      const allowedPaths = ['/dashboard', '/dashboard/profile', '/dashboard/membership'];
+      if (!allowedPaths.includes(pathname)) {
+        router.push('/dashboard');
+      }
+    }
+  }, [user, router, pathname]);
 
   if (!user) {
     return (
