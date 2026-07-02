@@ -93,7 +93,7 @@ export function DataProvider({ children }) {
     return members.find(m => m.id === id);
   }, [members]);
 
-  const renewMembership = useCallback((memberId, packageId) => {
+  const renewMembership = useCallback((memberId, packageId, paymentMethod = 'Cash') => {
     const pkg = packagesList.find(p => p.id === packageId);
     if (!pkg) return;
 
@@ -116,7 +116,7 @@ export function DataProvider({ children }) {
       amount: pkg.price,
       packageId,
       packageName: pkg.name,
-      method: 'Cash',
+      method: paymentMethod,
     });
   }, [members, packagesList]);
 
