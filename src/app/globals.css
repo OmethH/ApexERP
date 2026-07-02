@@ -2152,3 +2152,402 @@ ul, ol {
   color: var(--info);
 }
 
+/* ============================================
+   MEMBERSHIP PACKAGES — NEW STYLES
+   ============================================ */
+
+.pkg-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--space-6);
+  margin-top: var(--space-6);
+}
+
+.pkg-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--border-radius-lg);
+  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transition: all var(--transition-base);
+  overflow: hidden;
+}
+
+.pkg-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--border-secondary);
+  box-shadow: var(--shadow-md), 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+/* Subtle accent glow line at the top of active package cards */
+.pkg-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent-primary), #FF4444);
+  opacity: 0.8;
+}
+
+/* Inactive card state styling */
+.pkg-card-inactive::before {
+  background: var(--text-tertiary);
+  opacity: 0.4;
+}
+
+.pkg-card-inactive {
+  opacity: 0.6;
+}
+
+.pkg-inactive-badge {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  background: var(--border-secondary);
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--border-radius-full);
+  letter-spacing: 1px;
+}
+
+/* Header */
+.pkg-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+  position: relative;
+}
+
+.pkg-card-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--border-radius-md);
+  background: var(--accent-muted);
+  color: var(--accent-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pkg-card-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.pkg-card-name {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+
+.pkg-card-price {
+  font-size: var(--font-size-xl);
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-top: var(--space-1);
+}
+
+/* Action Buttons inside Card Header */
+.pkg-card-actions {
+  display: flex;
+  gap: var(--space-2);
+  margin-left: auto;
+  align-self: flex-start;
+}
+
+/* Badges section */
+.pkg-card-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-5);
+}
+
+.pkg-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 4px var(--space-3);
+  border-radius: var(--border-radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.pkg-badge-duration {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  color: var(--text-secondary);
+}
+
+/* Branch List (selected modes) */
+.pkg-branch-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: var(--space-5);
+  padding: var(--space-3);
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--border-primary);
+}
+
+.pkg-branch-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-xs);
+  padding: 3px var(--space-2);
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.pkg-branch-chip svg {
+  width: 10px;
+  height: 10px;
+  color: var(--text-tertiary);
+}
+
+.pkg-branch-more {
+  background: var(--bg-surface-hover);
+  color: var(--text-tertiary);
+  font-weight: 600;
+}
+
+/* Access Summaries */
+.pkg-access-summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-5);
+  padding: 0 var(--space-1);
+}
+
+.pkg-access-summary svg {
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+/* Footer Section */
+.pkg-card-footer {
+  margin-top: auto;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border-primary);
+}
+
+.pkg-card-members {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.pkg-card-members svg {
+  color: var(--text-tertiary);
+}
+
+/* --- Form & Modal Styling Elements --- */
+.pkg-duration-chip {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--border-radius-md);
+  transition: all var(--transition-fast);
+  cursor: pointer;
+}
+
+.pkg-duration-chip:hover {
+  background: var(--bg-surface-hover);
+  border-color: var(--border-secondary);
+  color: var(--text-primary);
+}
+
+.pkg-duration-chip.active {
+  background: var(--accent-muted);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+/* Branch Access Rule buttons in Form */
+.branch-access-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.branch-access-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-primary);
+  border-radius: var(--border-radius-lg);
+  transition: all var(--transition-fast);
+  text-align: left;
+  position: relative;
+  width: 100%;
+  cursor: pointer;
+}
+
+.branch-access-btn:hover {
+  border-color: var(--border-secondary);
+  background: var(--bg-surface-hover);
+}
+
+.branch-access-btn.active {
+  border-color: var(--accent-primary);
+  background: var(--accent-muted);
+}
+
+.branch-access-btn-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--border-radius-md);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all var(--transition-fast);
+}
+
+.branch-access-btn.active .branch-access-btn-icon {
+  background: var(--accent-primary);
+  color: #fff;
+}
+
+.branch-access-btn-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.branch-access-btn-label {
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.branch-access-btn-desc {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.branch-access-check {
+  margin-left: auto;
+  color: var(--accent-primary);
+  flex-shrink: 0;
+}
+
+/* Branch Picker Grid in Form */
+.branch-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+  max-height: 240px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.branch-picker-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--border-radius-md);
+  transition: all var(--transition-fast);
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+}
+
+.branch-picker-item:hover {
+  background: var(--bg-surface-hover);
+  border-color: var(--border-secondary);
+}
+
+.branch-picker-item.selected {
+  border-color: var(--accent-primary);
+  background: var(--accent-muted);
+}
+
+.branch-picker-check {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 2px solid var(--border-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-primary);
+  flex-shrink: 0;
+  transition: all var(--transition-fast);
+}
+
+.branch-picker-item.selected .branch-picker-check {
+  border-color: var(--accent-primary);
+  background: transparent;
+}
+
+.branch-picker-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.branch-picker-name {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.branch-picker-meta {
+  font-size: 10px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.branch-picker-meta svg {
+  width: 10px;
+  height: 10px;
+}
+
+@media (max-width: 600px) {
+  .branch-picker-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+

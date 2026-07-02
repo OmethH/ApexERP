@@ -30,7 +30,23 @@ export function DataProvider({ children }) {
     if (savedStaff) setStaffList(JSON.parse(savedStaff));
     if (savedPayments) setPaymentsList(JSON.parse(savedPayments));
     if (savedBranches) setBranchesList(JSON.parse(savedBranches));
-    if (savedPackages) setPackagesList(JSON.parse(savedPackages));
+    if (savedPackages) {
+      const parsed = JSON.parse(savedPackages);
+      const merged = parsed.map(pkg => {
+        const initial = initialPackages.find(p => p.id === pkg.id);
+        if (initial) {
+          return {
+            ...initial,
+            ...pkg,
+            duration: (initial.durationType === 'time-based' || initial.durationType === 'full-time') ? null : pkg.duration,
+            startTime: pkg.startTime !== undefined ? pkg.startTime : initial.startTime,
+            endTime: pkg.endTime !== undefined ? pkg.endTime : initial.endTime,
+          };
+        }
+        return pkg;
+      });
+      setPackagesList(merged);
+    }
     setIsLoaded(true);
   }, []);
 
@@ -82,8 +98,7 @@ export function DataProvider({ children }) {
     if (!pkg) return;
 
     const startDate = new Date().toISOString().split('T')[0];
-    // Full-time packages get a far-future end date
-    const endDate = pkg.durationType === 'full-time'
+    const endDate = (pkg.durationType === 'full-time' || pkg.durationType === 'time-based')
       ? '2099-12-31'
       : new Date(Date.now() + (pkg.duration || 30) * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 

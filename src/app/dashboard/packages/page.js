@@ -11,6 +11,15 @@ import {
   Thermometer, Wind, Lock, Globe, ChevronDown,
 } from 'lucide-react';
 
+function formatTime(timeStr) {
+  if (!timeStr) return 'All Day';
+  const [hoursStr, minutesStr] = timeStr.split(':');
+  const hours = parseInt(hoursStr, 10);
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  const displayHours = hours % 12 || 12;
+  return `${displayHours}:${minutesStr} ${ampm}`;
+}
+
 // ─── Branch Access Label Helper ──────────────────────────────────────────────
 function getBranchAccessLabel(pkg, branches) {
   switch (pkg.branchAccess) {
@@ -98,6 +107,8 @@ function PackageFormModal({ pkg, branches, onClose, onSave }) {
     price: pkg?.price || '',
     durationType: pkg?.durationType || 'time-based',
     duration: pkg?.duration || 30,
+    startTime: pkg?.startTime || '09:00',
+    endTime: pkg?.endTime || '17:00',
     branchAccess: pkg?.branchAccess || 'all',
     allowedBranches: pkg?.allowedBranches || [],
     status: pkg?.status || 'active',
@@ -153,8 +164,15 @@ function PackageFormModal({ pkg, branches, onClose, onSave }) {
     const errs = {};
     if (!form.name.trim()) errs.name = 'Package name is required';
     if (!form.price || Number(form.price) <= 0) errs.price = 'Price must be greater than 0';
-    if (form.durationType === 'time-based' && (!form.duration || Number(form.duration) <= 0)) {
-      errs.duration = 'Duration must be greater than 0';
+    if (form.durationType === 'time-based') {
+      if (!form.startTime) {
+        errs.startTime = 'Start time is required';
+      }
+      if (!form.endTime) {
+        errs.endTime = 'End time is required';
+      } else if (form.startTime && form.startTime >= form.endTime) {
+        errs.endTime = 'End time must be after start time';
+      }
     }
     if (form.branchAccess === 'selected' && (form.allowedBranches || []).length === 0) {
       errs.allowedBranches = 'Select at least one branch';
@@ -173,13 +191,10 @@ function PackageFormModal({ pkg, branches, onClose, onSave }) {
       name: form.name.trim(),
       price: Number(form.price),
       durationType: form.durationType,
-      duration: form.durationType === 'full-time' ? null : Number(form.duration),
-      type: form.durationType === 'full-time' ? 'premium' : (
-        Number(form.duration) <= 1 ? 'daily' :
-        Number(form.duration) <= 31 ? 'monthly' :
-        Number(form.duration) <= 92 ? 'quarterly' :
-        Number(form.duration) <= 183 ? 'biannual' : 'annual'
-      ),
+      duration: (form.durationType === 'full-time' || form.durationType === 'time-based') ? null : Number(form.duration),
+      startTime: form.durationType === 'time-based' ? form.startTime : null,
+      endTime: form.durationType === 'time-based' ? form.endTime : null,
+      type: form.durationType === 'full-time' ? 'premium' : 'time-based',
       branchAccess: form.branchAccess,
       allowedBranches: form.branchAccess === 'selected' ? form.allowedBranches : [],
       status: form.status,
@@ -267,37 +282,31 @@ function PackageFormModal({ pkg, branches, onClose, onSave }) {
               </div>
             </div>
 
-            {/* Duration Days — only for time-based */}
+            {/* Daily Time Range — only for time-based */}
             {form.durationType === 'time-based' && (
               <div className="form-group">
-                <label className="form-label">Duration (Days) <span style={{ color: 'var(--accent-primary)' }}>*</span></label>
-                <input
-                  className={`form-input${errors.duration ? ' form-input-error' : ''}`}
-                  type="number"
-                  min="1"
-                  placeholder="30"
-                  value={form.duration}
-                  onChange={e => set('duration', e.target.value)}
-                />
-                {errors.duration && <span className="form-error">{errors.duration}</span>}
-                <div style={{ display: 'flex', gap: '6px', marginTop: '4px', flexWrap: 'wrap' }}>
-                  {[
-                    { label: '1 Day', val: 1 },
-                    { label: '7 Days', val: 7 },
-                    { label: '30 Days', val: 30 },
-                    { label: '90 Days', val: 90 },
-                    { label: '180 Days', val: 180 },
-                    { label: '365 Days', val: 365 },
-                  ].map(preset => (
-                    <button
-                      type="button"
-                      key={preset.val}
-                      className={`pkg-duration-chip${Number(form.duration) === preset.val ? ' active' : ''}`}
-                      onClick={() => set('duration', preset.val)}
-                    >
-                      {preset.label}
-                    </button>
-                  ))}
+                <label className="form-label">Daily Allowed Time Range <span style={{ color: 'var(--accent-primary)' }}>*</span></label>
+                <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
+                  <div>
+                    <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>From</span>
+                    <input
+                      className={`form-input${errors.startTime ? ' form-input-error' : ''}`}
+                      type="time"
+                      value={form.startTime}
+                      onChange={e => set('startTime', e.target.value)}
+                    />
+                    {errors.startTime && <span className="form-error">{errors.startTime}</span>}
+                  </div>
+                  <div>
+                    <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)', marginBottom: '4px', display: 'block' }}>To</span>
+                    <input
+                      className={`form-input${errors.endTime ? ' form-input-error' : ''}`}
+                      type="time"
+                      value={form.endTime}
+                      onChange={e => set('endTime', e.target.value)}
+                    />
+                    {errors.endTime && <span className="form-error">{errors.endTime}</span>}
+                  </div>
                 </div>
               </div>
             )}
@@ -553,9 +562,14 @@ export default function PackagesPage() {
                     {pkg.durationType === 'full-time' ? (
                       <><Infinity size={12} /> Full-Time</>
                     ) : (
-                      <><Clock size={12} /> {pkg.duration} Day{pkg.duration !== 1 ? 's' : ''}</>
+                      <><Clock size={12} /> Time-Based</>
                     )}
                   </span>
+                  {pkg.durationType === 'time-based' && pkg.startTime && pkg.endTime && (
+                    <span className="pkg-badge pkg-badge-duration" style={{ borderStyle: 'dashed' }}>
+                      <Clock size={12} /> {formatTime(pkg.startTime)} - {formatTime(pkg.endTime)}
+                    </span>
+                  )}
                   <span className="pkg-badge" style={{ background: accessColors.bg, color: accessColors.color }}>
                     <AccessIcon size={12} />
                     {getBranchAccessLabel(pkg, branches)}
