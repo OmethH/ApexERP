@@ -246,4 +246,6 @@ export const demoUsers = [
   { id: 'USR001', name: 'Admin User', email: 'admin@powerworld.com', password: 'admin123', role: 'Admin', branchId: null },
   { id: 'USR002', name: 'Ruwan Perera', email: 'manager@powerworld.com', password: 'manager123', role: 'Manager', branchId: 'BR001' },
   { id: 'USR003', name: 'Kasun Fernando', email: 'staff@powerworld.com', password: 'staff123', role: 'Staff', branchId: 'BR001' },
+  { id: 'USR004', name: 'Dilshan Jayawardena', email: 'trainer@powerworld.com', password: 'trainer123', role: 'Trainer', branchId: 'BR001', staffId: 'STF004' },
+  { id: 'USR005', name: 'Ashan Perera', email: 'customer@powerworld.com', password: 'customer123', role: 'Customer', branchId: 'BR001', memberId: 'MEM001' },
 ];

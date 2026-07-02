@@ -52,13 +52,14 @@ function CustomTooltip({ active, payload, label }) {
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const { members, payments, stats, branches } = useData();
+  const { members, staff = [], payments, stats, branches } = useData();
 
   const monthlyRevenue = useMemo(() => getMonthlyRevenue(payments), [payments]);
   const revenueByBranch = useMemo(() => getRevenueByBranch(payments), [payments]);
   const memberDist = useMemo(() => getMembershipDistribution(members), [members]);
   const membersByBranch = useMemo(() => getMembersByBranch(members), [members]);
 
+  // --- Admin columns ---
   const recentColDefs = useMemo(() => [
     {
       headerName: 'Member',
@@ -157,6 +158,404 @@ export default function DashboardPage() {
     }
   ], []);
 
+  // --- Trainer columns & state ---
+  const currentTrainer = useMemo(() => {
+    return staff.find(s => s.id === user?.staffId || s.email === user?.email) || null;
+  }, [staff, user]);
+
+  const trainerBranch = useMemo(() => {
+    return branches.find(b => b.id === (currentTrainer?.branchId || user?.branchId)) || null;
+  }, [branches, currentTrainer, user]);
+
+  const trainerMembers = useMemo(() => {
+    const bId = currentTrainer?.branchId || user?.branchId || 'BR001';
+    return members.filter(m => m.branchId === bId);
+  }, [members, currentTrainer, user]);
+
+  const trainerMembersColDefs = useMemo(() => [
+    {
+      headerName: 'Member',
+      field: 'fullName',
+      minWidth: 150,
+      flex: 1.5,
+      cellRenderer: (params) => {
+        if (!params.data) return null;
+        return (
+          <div className="table-cell-name">
+            <div className="table-avatar">{getInitials(params.data.fullName)}</div>
+            <div>
+              <div className="table-cell-primary">{params.data.fullName}</div>
+              <div className="table-cell-secondary">{params.data.email}</div>
+            </div>
+          </div>
+        );
+      }
+    },
+    {
+      headerName: 'Phone',
+      field: 'phone',
+      minWidth: 120,
+      flex: 1,
+    },
+    {
+      headerName: 'Package',
+      field: 'packageName',
+      minWidth: 100,
+      flex: 1,
+    },
+    {
+      headerName: 'Status',
+      field: 'status',
+      minWidth: 90,
+      flex: 0.8,
+      cellRenderer: (params) => {
+        if (!params.value) return null;
+        return <Badge status={params.value} />;
+      }
+    }
+  ], []);
+
+  // --- Customer columns & state ---
+  const currentCustomer = useMemo(() => {
+    return members.find(m => m.id === user?.memberId || m.email === user?.email) || null;
+  }, [members, user]);
+
+  const customerPayments = useMemo(() => {
+    if (!currentCustomer) return [];
+    return payments.filter(p => p.memberId === currentCustomer.id);
+  }, [payments, currentCustomer]);
+
+  const customerBranch = useMemo(() => {
+    return branches.find(b => b.id === currentCustomer?.branchId) || null;
+  }, [branches, currentCustomer]);
+
+  const daysLeft = useMemo(() => {
+    if (!currentCustomer || currentCustomer.status !== 'active') return 0;
+    const end = new Date(currentCustomer.membershipEnd);
+    const start = new Date();
+    const diffTime = end - start;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays > 0 ? diffDays : 0;
+  }, [currentCustomer]);
+
+  const customerPaymentsColDefs = useMemo(() => [
+    {
+      headerName: 'Receipt No',
+      field: 'receiptNo',
+      minWidth: 120,
+      flex: 1,
+      cellClass: 'table-cell-primary',
+    },
+    {
+      headerName: 'Date',
+      field: 'date',
+      valueFormatter: (params) => formatDate(params.value),
+      minWidth: 110,
+      flex: 1,
+    },
+    {
+      headerName: 'Package',
+      field: 'packageName',
+      minWidth: 120,
+      flex: 1.2,
+    },
+    {
+      headerName: 'Amount',
+      field: 'amount',
+      valueFormatter: (params) => formatCurrency(params.value),
+      minWidth: 100,
+      flex: 1,
+      cellStyle: { fontWeight: 700, color: 'var(--success)' },
+    },
+    {
+      headerName: 'Method',
+      field: 'method',
+      minWidth: 100,
+      flex: 1,
+    }
+  ], []);
+
+  // ============================================
+  // RENDER TRAINER DASHBOARD
+  // ============================================
+  if (user?.role === 'Trainer') {
+    return (
+      <>
+        <Header title={`Coach ${user.name.split(' ')[0]}`} subtitle={`Trainer Dashboard | ${trainerBranch?.name || 'Colombo'}`} />
+        <div className="dashboard-content">
+          <div className="stats-grid stagger-children">
+            <StatCard
+              label="Branch Clients"
+              value={trainerMembers.length}
+              trend={12.5}
+              trendLabel="this month"
+              icon={Users}
+              accentColor="#448AFF"
+              accentBg="rgba(68,138,255,0.15)"
+            />
+            <StatCard
+              label="Trainer Rating"
+              value="4.9 / 5.0"
+              trend={0.2}
+              trendLabel="vs last month"
+              icon={Eye} // using Eye as review/rating proxy
+              accentColor="#00C853"
+              accentBg="rgba(0,200,83,0.15)"
+            />
+            <StatCard
+              label="Assigned Classes"
+              value="4 Today"
+              trend={2}
+              trendLabel="sessions tomorrow"
+              icon={Clock}
+              accentColor="#FFB300"
+              accentBg="rgba(255,179,0,0.15)"
+            />
+            <StatCard
+              label="Monthly Salary"
+              value={formatCurrency(currentTrainer?.salary || 80000)}
+              trend={0}
+              trendLabel="base contract"
+              icon={DollarSign}
+              accentColor="#FF3D3D"
+              accentBg="rgba(255,61,61,0.15)"
+            />
+          </div>
+
+          <div className="grid-2" style={{ marginBottom: 'var(--space-6)', marginTop: 'var(--space-5)' }}>
+            {/* Daily Schedule */}
+            <div className="card animate-fade-in">
+              <div className="card-header">
+                <h3 className="card-title">📅 Today&apos;s Sessions</h3>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {[
+                  { time: '08:00 AM - 09:30 AM', type: 'Morning Spin Class', clients: '12 Registered', status: 'Upcoming' },
+                  { time: '10:30 AM - 11:30 AM', type: 'Personal Training', clients: 'Ashan Perera', status: 'Completed' },
+                  { time: '04:00 PM - 05:30 PM', type: 'HIIT Bootcamp', clients: '18 Registered', status: 'Upcoming' },
+                  { time: '06:30 PM - 07:30 PM', type: 'Strength & Conditioning', clients: '8 Registered', status: 'Upcoming' },
+                ].map((session, i) => (
+                  <div key={i} style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '12px 16px',
+                    background: '#151515',
+                    borderRadius: '8px',
+                    borderLeft: '4px solid var(--accent-primary)',
+                  }}>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: '14px' }}>{session.type}</div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>{session.time}</div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}>{session.clients}</div>
+                      <Badge status={session.status === 'Completed' ? 'completed' : 'pending'}>
+                        {session.status}
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Quick Trainer Notice Board */}
+            <div className="card animate-fade-in">
+              <div className="card-header">
+                <h3 className="card-title">📣 Staff Announcements</h3>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ borderBottom: '1px solid #222', paddingBottom: '12px' }}>
+                  <span style={{ fontSize: '11px', color: 'var(--accent-primary)', fontWeight: 700, textTransform: 'uppercase' }}>Annual Audit</span>
+                  <h4 style={{ fontSize: '14px', margin: '4px 0', fontWeight: 600 }}>Equipment Inspections</h4>
+                  <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>All personal trainers must document any worn equipment or cable machines that require servicing before Sunday.</p>
+                </div>
+                <div style={{ borderBottom: '1px solid #222', paddingBottom: '12px' }}>
+                  <span style={{ fontSize: '11px', color: '#00C853', fontWeight: 700, textTransform: 'uppercase' }}>New Policy</span>
+                  <h4 style={{ fontSize: '14px', margin: '4px 0', fontWeight: 600 }}>Complimentary Gym Guest Passes</h4>
+                  <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Trainers are allocated 3 complimentary guest passes per month to recruit personal training clients.</p>
+                </div>
+                <div>
+                  <span style={{ fontSize: '11px', color: '#FFB300', fontWeight: 700, textTransform: 'uppercase' }}>Workshop</span>
+                  <h4 style={{ fontSize: '14px', margin: '4px 0', fontWeight: 600 }}>CPR Renewal & Advanced Training</h4>
+                  <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>A certified CPR renewal workshop will be held at the Colombo branch next Saturday. Attendance is mandatory for all trainers.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Members at Branch */}
+          <div className="table-container animate-fade-in">
+            <div className="table-header">
+              <div className="table-header-left">
+                <h3 className="table-title">Branch Members</h3>
+                <span className="table-count">{trainerMembers.length} active at your location</span>
+              </div>
+            </div>
+            <div className="ag-theme-quartz-dark" style={{ width: '100%' }}>
+              <AgGridReact
+                rowData={trainerMembers}
+                columnDefs={trainerMembersColDefs}
+                domLayout="autoHeight"
+                suppressCellFocus={true}
+              />
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // ============================================
+  // RENDER CUSTOMER DASHBOARD
+  // ============================================
+  if (user?.role === 'Customer') {
+    return (
+      <>
+        <Header title={`Welcome back, ${user.name.split(' ')[0]}`} subtitle="Gym Member Dashboard" />
+        <div className="dashboard-content">
+          <div className="stats-grid stagger-children">
+            <StatCard
+              label="Membership Status"
+              value={currentCustomer?.status?.toUpperCase() || 'ACTIVE'}
+              trend={0}
+              trendLabel="status check"
+              icon={UserCheck}
+              accentColor={currentCustomer?.status === 'active' ? '#00C853' : '#FF3D3D'}
+              accentBg={currentCustomer?.status === 'active' ? 'rgba(0,200,83,0.15)' : 'rgba(255,61,61,0.15)'}
+            />
+            <StatCard
+              label="Days Remaining"
+              value={`${daysLeft} Days`}
+              trend={0}
+              trendLabel="expires soon"
+              icon={Clock}
+              accentColor={daysLeft <= 15 ? '#FFB300' : '#448AFF'}
+              accentBg={daysLeft <= 15 ? 'rgba(255,179,0,0.15)' : 'rgba(68,138,255,0.15)'}
+            />
+            <StatCard
+              label="Workouts This Month"
+              value="14 Sessions"
+              trend={16.6}
+              trendLabel="vs last month"
+              icon={Users} // using Users as health stats icon proxy
+              accentColor="#00C853"
+              accentBg="rgba(0,200,83,0.15)"
+            />
+            <StatCard
+              label="Total Spent"
+              value={formatCurrency(customerPayments.reduce((sum, p) => sum + p.amount, 0))}
+              trend={0}
+              trendLabel="billing ledger"
+              icon={DollarSign}
+              accentColor="#FFB300"
+              accentBg="rgba(255,179,0,0.15)"
+            />
+          </div>
+
+          <div className="grid-2" style={{ marginBottom: 'var(--space-6)', marginTop: 'var(--space-5)' }}>
+            {/* Gym Announcements */}
+            <div className="card animate-fade-in">
+              <div className="card-header">
+                <h3 className="card-title">📣 Gym Announcements & Tips</h3>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ borderBottom: '1px solid #222', paddingBottom: '12px' }}>
+                  <span style={{ fontSize: '11px', color: 'var(--accent-primary)', fontWeight: 700, textTransform: 'uppercase' }}>Equipment Upgrade</span>
+                  <h4 style={{ fontSize: '14px', margin: '4px 0', fontWeight: 600 }}>New Treadmills Arriving Next Week!</h4>
+                  <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>We are replacing 10 treadmills in the Colombo branch with the latest interactive models from Life Fitness.</p>
+                </div>
+                <div style={{ borderBottom: '1px solid #222', paddingBottom: '12px' }}>
+                  <span style={{ fontSize: '11px', color: 'var(--accent-primary)', fontWeight: 700, textTransform: 'uppercase' }}>Nutrition Seminar</span>
+                  <h4 style={{ fontSize: '14px', margin: '4px 0', fontWeight: 600 }}>Optimal Post-Workout Meals</h4>
+                  <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Join Coach Dilshan on Friday at 5:00 PM for an interactive chat about macros and supplement timing.</p>
+                </div>
+                <div>
+                  <span style={{ fontSize: '11px', color: 'var(--accent-primary)', fontWeight: 700, textTransform: 'uppercase' }}>Trainer Tip</span>
+                  <h4 style={{ fontSize: '14px', margin: '4px 0', fontWeight: 600 }}>Hydration and Muscle Recovery</h4>
+                  <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Drinking enough water reduces muscle soreness by flushing toxins out of your muscle tissues. Aim for 3L daily!</p>
+                </div>
+              </div>
+            </div>
+
+            {/* My Gym Branch Location */}
+            <div className="card animate-fade-in" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              <div>
+                <div className="card-header">
+                  <h3 className="card-title">🏢 My Home Branch</h3>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div>
+                    <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', textTransform: 'uppercase' }}>Branch Name</span>
+                    <div style={{ fontWeight: 700, fontSize: '16px', color: 'white' }}>{customerBranch?.name || 'Power World Colombo'}</div>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', textTransform: 'uppercase' }}>Address & Location</span>
+                    <div style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>{customerBranch?.location || 'Colombo 03'}</div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    <div>
+                      <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', textTransform: 'uppercase' }}>Phone</span>
+                      <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600 }}>{customerBranch?.phone || '+94 11 234 5678'}</div>
+                    </div>
+                    <div>
+                      <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', textTransform: 'uppercase' }}>Email</span>
+                      <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600 }}>{customerBranch?.email || 'colombo@powerworld.lk'}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{
+                marginTop: '20px',
+                paddingTop: '16px',
+                borderTop: '1px solid #222',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+              }}>
+                <div className="table-avatar">{getInitials(customerBranch?.manager || 'Ruwan Perera')}</div>
+                <div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>Branch Manager</div>
+                  <div style={{ fontSize: '14px', fontWeight: 700, color: 'white' }}>{customerBranch?.manager || 'Ruwan Perera'}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Payment History */}
+          <div className="table-container animate-fade-in">
+            <div className="table-header">
+              <div className="table-header-left">
+                <h3 className="table-title">My Billing & Payments</h3>
+                <span className="table-count">{customerPayments.length} transactions</span>
+              </div>
+            </div>
+            {customerPayments.length > 0 ? (
+              <div className="ag-theme-quartz-dark" style={{ width: '100%' }}>
+                <AgGridReact
+                  rowData={customerPayments}
+                  columnDefs={customerPaymentsColDefs}
+                  domLayout="autoHeight"
+                  suppressCellFocus={true}
+                />
+              </div>
+            ) : (
+              <div className="empty-state" style={{ padding: 'var(--space-8)' }}>
+                <Clock size={32} />
+                <h3>No payment records</h3>
+                <p>We could not find any transaction records for your account.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // ============================================
+  // RENDER ADMIN / STAFF DASHBOARD (EXISTING)
+  // ============================================
   return (
     <>
       <Header title={`Welcome back, ${user?.name?.split(' ')[0]}`} subtitle="Executive Dashboard" />

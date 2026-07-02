@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import { AgGridReact } from 'ag-grid-react';
 import { useData } from '@/context/DataContext';
+import { useAuth } from '@/context/AuthContext';
 import Header from '@/components/Header';
 import Badge from '@/components/Badge';
 import Modal from '@/components/Modal';
@@ -13,6 +14,7 @@ const ITEMS_PER_PAGE = 10;
 
 export default function StaffPage() {
   const { staff, branches, addStaffMember, deleteStaff } = useData();
+  const { registerUser } = useAuth();
   const [search, setSearch] = useState('');
   const [branchFilter, setBranchFilter] = useState('all');
   const [roleFilter, setRoleFilter] = useState('all');
@@ -21,7 +23,7 @@ export default function StaffPage() {
 
   const [form, setForm] = useState({
     firstName: '', lastName: '', email: '', phone: '',
-    role: 'Trainer', branchId: '', salary: '',
+    role: 'Trainer', branchId: '', salary: '', password: '',
   });
 
   const roles = useMemo(() => [...new Set(staff.map(s => s.role))], [staff]);
@@ -134,13 +136,18 @@ export default function StaffPage() {
   ], [branches, deleteStaff]);
 
   const handleAdd = () => {
-    addStaffMember({
+    const newStaff = addStaffMember({
       ...form,
       fullName: `${form.firstName} ${form.lastName}`,
       salary: parseInt(form.salary) || 0,
     });
+    
+    if (newStaff && form.password) {
+      registerUser(form.email, form.password, form.role, newStaff.id, newStaff.fullName, newStaff.branchId);
+    }
+    
     setShowAddModal(false);
-    setForm({ firstName: '', lastName: '', email: '', phone: '', role: 'Trainer', branchId: '', salary: '' });
+    setForm({ firstName: '', lastName: '', email: '', phone: '', role: 'Trainer', branchId: '', salary: '', password: '' });
   };
 
   return (
@@ -248,9 +255,15 @@ export default function StaffPage() {
                 </select>
               </div>
             </div>
-            <div className="form-group">
-              <label>Monthly Salary (LKR)</label>
-              <input type="number" value={form.salary} onChange={e => setForm(f => ({ ...f, salary: e.target.value }))} placeholder="e.g. 80000" />
+            <div className="form-row">
+              <div className="form-group">
+                <label>Monthly Salary (LKR)</label>
+                <input type="number" value={form.salary} onChange={e => setForm(f => ({ ...f, salary: e.target.value }))} placeholder="e.g. 80000" />
+              </div>
+              <div className="form-group">
+                <label>Login Password</label>
+                <input type="password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} placeholder="Set login password" />
+              </div>
             </div>
           </div>
         </Modal>
