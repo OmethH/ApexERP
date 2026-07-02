@@ -1764,3 +1764,391 @@ ul, ol {
   display: flex;
   align-items: center;
 }
+
+/* ============================================
+   BRANCH MANAGEMENT — NEW STYLES
+   ============================================ */
+
+/* --- Branch Card Enhancements --- */
+.branch-card-image {
+  position: relative;
+  width: calc(100% + var(--space-12));
+  margin: calc(-1 * var(--space-6)) calc(-1 * var(--space-6)) var(--space-5);
+  height: 140px;
+  overflow: hidden;
+  border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+}
+
+.branch-card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--transition-slow);
+}
+
+.branch-card:hover .branch-card-image img {
+  transform: scale(1.05);
+}
+
+/* AC Badge over image */
+.branch-ac-badge {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: var(--border-radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  background: rgba(0, 200, 83, 0.85);
+  color: #fff;
+  backdrop-filter: blur(4px);
+}
+
+.branch-ac-badge.non-ac {
+  background: rgba(68, 138, 255, 0.85);
+}
+
+/* AC Badge inline (no image) */
+.branch-ac-badge-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 8px;
+  border-radius: var(--border-radius-full);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  background: var(--success-muted);
+  color: var(--success);
+  flex-shrink: 0;
+}
+
+.branch-ac-badge-inline.non-ac {
+  background: var(--info-muted);
+  color: var(--info);
+}
+
+/* Edit button on branch card */
+.branch-edit-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--border-radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  background: transparent;
+  border: 1px solid transparent;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.branch-edit-btn:hover {
+  background: var(--bg-surface-elevated);
+  border-color: var(--border-secondary);
+  color: var(--accent-primary);
+}
+
+/* Location link on card */
+.branch-card-location-link {
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border-primary);
+}
+
+.branch-location-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--info);
+  text-decoration: none;
+  transition: opacity var(--transition-fast);
+}
+
+.branch-location-link:hover {
+  opacity: 0.75;
+}
+
+/* Add placeholder card */
+.branch-card-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 180px;
+  border-style: dashed;
+  border-color: var(--border-secondary);
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.branch-card-add:hover {
+  border-color: var(--accent-primary);
+  background: var(--accent-muted);
+}
+
+/* --- Branch Form Modal --- */
+.branch-modal {
+  max-width: 600px !important;
+}
+
+/* Image Upload Zone */
+.branch-image-upload {
+  width: 100%;
+  height: 160px;
+  border: 2px dashed var(--border-secondary);
+  border-radius: var(--border-radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  background: var(--bg-secondary);
+  overflow: hidden;
+  position: relative;
+}
+
+.branch-image-upload:hover {
+  border-color: var(--accent-primary);
+  background: var(--accent-muted);
+}
+
+.branch-image-placeholder {
+  text-align: center;
+  pointer-events: none;
+}
+
+.branch-image-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: var(--border-radius-lg);
+  background: var(--bg-surface-elevated);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto var(--space-3);
+  color: var(--text-tertiary);
+  transition: all var(--transition-base);
+}
+
+.branch-image-upload:hover .branch-image-icon {
+  background: var(--accent-muted);
+  color: var(--accent-primary);
+}
+
+.branch-image-text {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-1);
+}
+
+.branch-image-hint {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+}
+
+/* Overlay on preview image */
+.branch-image-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  color: #fff;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity var(--transition-base);
+  border-radius: 10px;
+}
+
+.branch-image-upload:hover .branch-image-overlay {
+  opacity: 1;
+}
+
+/* AC / Non-AC Toggle */
+.ac-toggle-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+.ac-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  border: 2px solid var(--border-secondary);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-align: left;
+}
+
+.ac-toggle-btn:hover {
+  border-color: var(--success);
+  color: var(--success);
+  background: var(--success-muted);
+}
+
+.ac-toggle-btn.active {
+  border-color: var(--success);
+  color: var(--success);
+  background: var(--success-muted);
+}
+
+.ac-toggle-btn.non-ac:hover,
+.ac-toggle-btn.non-ac.active {
+  border-color: var(--info);
+  color: var(--info);
+  background: var(--info-muted);
+}
+
+/* Location preview link in form */
+.branch-location-preview {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--font-size-xs);
+  color: var(--info);
+  margin-top: var(--space-2);
+  text-decoration: none;
+  font-weight: 500;
+  transition: opacity var(--transition-fast);
+}
+
+.branch-location-preview:hover {
+  opacity: 0.75;
+}
+
+/* Form group + input + textarea */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.branch-form-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 60px;
+  font-family: var(--font-family);
+  line-height: 1.5;
+}
+
+.form-input-error {
+  border-color: var(--error) !important;
+}
+
+.form-error {
+  font-size: var(--font-size-xs);
+  color: var(--error);
+  margin-top: -4px;
+}
+
+/* --- Branch Detail Page --- */
+.branch-detail-hero {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--border-radius-xl);
+  overflow: hidden;
+  margin-bottom: var(--space-8);
+}
+
+.branch-detail-image {
+  position: relative;
+  width: 100%;
+  height: 220px;
+  overflow: hidden;
+}
+
+.branch-detail-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.branch-detail-image-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.6) 100%);
+}
+
+.branch-detail-info {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-6);
+  padding: var(--space-6);
+  flex-wrap: wrap;
+}
+
+.branch-detail-meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.branch-detail-name {
+  font-size: var(--font-size-2xl);
+  font-weight: 800;
+}
+
+.branch-detail-address {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin-top: var(--space-2);
+}
+
+.branch-detail-actions {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  flex-shrink: 0;
+}
+
+.branch-location-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  text-decoration: none;
+}
+
+/* AC / Non-AC pill on detail page */
+.branch-ac-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
+  border-radius: var(--border-radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  background: var(--success-muted);
+  color: var(--success);
+  flex-shrink: 0;
+}
+
+.branch-ac-pill.non-ac {
+  background: var(--info-muted);
+  color: var(--info);
+}
+

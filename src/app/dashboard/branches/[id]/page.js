@@ -7,7 +7,10 @@ import Header from '@/components/Header';
 import StatCard from '@/components/StatCard';
 import Badge from '@/components/Badge';
 import { formatDate, formatCurrency, getInitials } from '@/utils/formatters';
-import { ArrowLeft, Users, UserCog, DollarSign, UserCheck, Building2 } from 'lucide-react';
+import {
+  ArrowLeft, Users, UserCog, DollarSign, UserCheck, Building2,
+  MapPin, ExternalLink, Thermometer, Wind,
+} from 'lucide-react';
 import Link from 'next/link';
 
 export default function BranchDetailPage({ params }) {
@@ -127,10 +130,59 @@ export default function BranchDetailPage({ params }) {
           Back to Branches
         </Link>
 
-        <div className="page-header">
-          <div className="page-header-left">
-            <h1>{branch.name}</h1>
-            <p>{branch.location} • Manager: {branch.manager}</p>
+        {/* Branch Hero Section */}
+        <div className="branch-detail-hero">
+          {/* Hero Image */}
+          {branch.image && (
+            <div className="branch-detail-image">
+              <img src={branch.image} alt={branch.name} />
+              <div className="branch-detail-image-overlay" />
+            </div>
+          )}
+
+          <div className="branch-detail-info">
+            {/* Left: Name & Meta */}
+            <div className="branch-detail-meta">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+                <h1 className="branch-detail-name">{branch.name}</h1>
+                {/* AC / Non-AC Badge */}
+                <span className={`branch-ac-pill${branch.isAC === false ? ' non-ac' : ''}`}>
+                  {branch.isAC === false
+                    ? <><Wind size={13} /> Non-AC</>
+                    : <><Thermometer size={13} /> AC</>
+                  }
+                </span>
+              </div>
+
+              {/* Address */}
+              {branch.address && (
+                <p className="branch-detail-address">
+                  <MapPin size={14} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'middle', opacity: 0.6 }} />
+                  {branch.address}
+                </p>
+              )}
+
+              {/* Manager */}
+              <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--font-size-sm)', marginTop: '4px' }}>
+                Manager: <strong style={{ color: 'var(--text-primary)' }}>{branch.manager}</strong>
+              </p>
+            </div>
+
+            {/* Right: Location Link */}
+            <div className="branch-detail-actions">
+              {branch.googleMapsLink && (
+                <a
+                  href={branch.googleMapsLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-secondary branch-location-btn"
+                >
+                  <MapPin size={16} />
+                  Location
+                  <ExternalLink size={14} />
+                </a>
+              )}
+            </div>
           </div>
         </div>
 

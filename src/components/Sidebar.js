@@ -14,12 +14,14 @@ import {
   LogOut,
   X,
   User,
+  Package,
 } from 'lucide-react';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, section: 'Overview', roles: ['Admin', 'Manager', 'Staff', 'Trainer', 'Customer'] },
   { href: '/dashboard/members', label: 'Members', icon: Users, section: 'Management', roles: ['Admin', 'Manager', 'Staff'] },
   { href: '/dashboard/branches', label: 'Branches', icon: Building2, section: 'Management', roles: ['Admin', 'Manager', 'Staff'] },
+  { href: '/dashboard/packages', label: 'Packages', icon: Package, section: 'Management', roles: ['Admin'] },
   { href: '/dashboard/staff', label: 'Staff', icon: UserCog, section: 'Management', roles: ['Admin', 'Manager', 'Staff'] },
   { href: '/dashboard/payments', label: 'Payments', icon: CreditCard, section: 'Finance', roles: ['Admin', 'Manager', 'Staff'] },
   { href: '/dashboard/profile', label: 'My Profile', icon: User, section: 'Personal', roles: ['Admin', 'Manager', 'Staff', 'Trainer', 'Customer'] },

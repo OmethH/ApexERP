@@ -1,12 +1,12 @@
 'use client';
 
-import { createContext, useContext, useState, useCallback, useMemo } from 'react';
+import { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
 import {
   members as initialMembers,
   staff as initialStaff,
   payments as initialPayments,
-  branches,
-  packages,
+  branches as initialBranches,
+  packages as initialPackages,
 } from '@/data/mockData';
 
 const DataContext = createContext(null);
@@ -15,6 +15,44 @@ export function DataProvider({ children }) {
   const [members, setMembers] = useState(initialMembers);
   const [staffList, setStaffList] = useState(initialStaff);
   const [paymentsList, setPaymentsList] = useState(initialPayments);
+  const [branchesList, setBranchesList] = useState(initialBranches);
+  const [packagesList, setPackagesList] = useState(initialPackages);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    const savedMembers = localStorage.getItem('pw_members');
+    const savedStaff = localStorage.getItem('pw_staff');
+    const savedPayments = localStorage.getItem('pw_payments');
+    const savedBranches = localStorage.getItem('pw_branches');
+    const savedPackages = localStorage.getItem('pw_packages');
+
+    if (savedMembers) setMembers(JSON.parse(savedMembers));
+    if (savedStaff) setStaffList(JSON.parse(savedStaff));
+    if (savedPayments) setPaymentsList(JSON.parse(savedPayments));
+    if (savedBranches) setBranchesList(JSON.parse(savedBranches));
+    if (savedPackages) setPackagesList(JSON.parse(savedPackages));
+    setIsLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    if (isLoaded) localStorage.setItem('pw_members', JSON.stringify(members));
+  }, [members, isLoaded]);
+
+  useEffect(() => {
+    if (isLoaded) localStorage.setItem('pw_staff', JSON.stringify(staffList));
+  }, [staffList, isLoaded]);
+
+  useEffect(() => {
+    if (isLoaded) localStorage.setItem('pw_payments', JSON.stringify(paymentsList));
+  }, [paymentsList, isLoaded]);
+
+  useEffect(() => {
+    if (isLoaded) localStorage.setItem('pw_branches', JSON.stringify(branchesList));
+  }, [branchesList, isLoaded]);
+
+  useEffect(() => {
+    if (isLoaded) localStorage.setItem('pw_packages', JSON.stringify(packagesList));
+  }, [packagesList, isLoaded]);
 
   // --- Member CRUD ---
   const addMember = useCallback((memberData) => {
@@ -40,11 +78,14 @@ export function DataProvider({ children }) {
   }, [members]);
 
   const renewMembership = useCallback((memberId, packageId) => {
-    const pkg = packages.find(p => p.id === packageId);
+    const pkg = packagesList.find(p => p.id === packageId);
     if (!pkg) return;
 
     const startDate = new Date().toISOString().split('T')[0];
-    const endDate = new Date(Date.now() + pkg.duration * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    // Full-time packages get a far-future end date
+    const endDate = pkg.durationType === 'full-time'
+      ? '2099-12-31'
+      : new Date(Date.now() + (pkg.duration || 30) * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
     setMembers(prev => prev.map(m =>
       m.id === memberId
@@ -62,7 +103,7 @@ export function DataProvider({ children }) {
       packageName: pkg.name,
       method: 'Cash',
     });
-  }, [members]);
+  }, [members, packagesList]);
 
   // --- Staff CRUD ---
   const addStaffMember = useCallback((staffData) => {
@@ -96,6 +137,51 @@ export function DataProvider({ children }) {
     setPaymentsList(prev => [newPayment, ...prev]);
     return newPayment;
   }, [paymentsList.length]);
+
+  // --- Branch CRUD ---
+  const addBranch = useCallback((branchData) => {
+    const newBranch = {
+      ...branchData,
+      id: `BR${String(branchesList.length + 1).padStart(3, '0')}`,
+      status: 'active',
+      openDate: new Date().toISOString().split('T')[0],
+    };
+    setBranchesList(prev => [...prev, newBranch]);
+    return newBranch;
+  }, [branchesList.length]);
+
+  const updateBranch = useCallback((id, updates) => {
+    setBranchesList(prev => prev.map(b => b.id === id ? { ...b, ...updates } : b));
+  }, []);
+
+  // --- Package CRUD ---
+  const addPackage = useCallback((pkgData) => {
+    const newPkg = {
+      ...pkgData,
+      id: `PKG${String(packagesList.length + 1).padStart(3, '0')}`,
+      status: pkgData.status || 'active',
+    };
+    setPackagesList(prev => [...prev, newPkg]);
+    return newPkg;
+  }, [packagesList.length]);
+
+  const updatePackage = useCallback((id, updates) => {
+    setPackagesList(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
+  }, []);
+
+  const deletePackage = useCallback((id) => {
+    // Check if any active members use this package
+    const membersOnPkg = members.filter(m => m.packageId === id && m.status === 'active');
+    if (membersOnPkg.length > 0) {
+      // Soft-delete: mark inactive
+      setPackagesList(prev => prev.map(p => p.id === id ? { ...p, status: 'inactive' } : p));
+      return { softDeleted: true, activeMemberCount: membersOnPkg.length };
+    } else {
+      // Hard-delete: remove entirely
+      setPackagesList(prev => prev.filter(p => p.id !== id));
+      return { softDeleted: false };
+    }
+  }, [members]);
 
   // --- Computed Stats ---
   const stats = useMemo(() => {
@@ -136,7 +222,7 @@ export function DataProvider({ children }) {
       expiredMembers,
       pendingMembers,
       totalStaff: staffList.length,
-      totalBranches: branches.length,
+      totalBranches: branchesList.length,
       thisMonthRevenue,
       lastMonthRevenue,
       revenueTrend,
@@ -144,14 +230,14 @@ export function DataProvider({ children }) {
       expiringSoon,
       recentRegistrations,
     };
-  }, [members, staffList, paymentsList]);
+  }, [members, staffList, paymentsList, branchesList]);
 
   const value = {
     members,
     staff: staffList,
     payments: paymentsList,
-    branches,
-    packages,
+    branches: branchesList,
+    packages: packagesList,
     stats,
     addMember,
     updateMember,
@@ -162,6 +248,11 @@ export function DataProvider({ children }) {
     updateStaff,
     deleteStaff,
     addPayment,
+    addBranch,
+    updateBranch,
+    addPackage,
+    updatePackage,
+    deletePackage,
   };
 
   return (
