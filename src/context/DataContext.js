@@ -34,16 +34,14 @@ export function DataProvider({ children }) {
       const parsed = JSON.parse(savedPackages);
       const merged = parsed.map(pkg => {
         const initial = initialPackages.find(p => p.id === pkg.id);
-        if (initial) {
-          return {
-            ...initial,
-            ...pkg,
-            duration: (initial.durationType === 'time-based' || initial.durationType === 'full-time') ? null : pkg.duration,
-            startTime: pkg.startTime !== undefined ? pkg.startTime : initial.startTime,
-            endTime: pkg.endTime !== undefined ? pkg.endTime : initial.endTime,
-          };
-        }
-        return pkg;
+        const defaultDuration = initial ? (initial.duration || 30) : 30;
+        return {
+          ...initial,
+          ...pkg,
+          duration: pkg.duration !== null && pkg.duration !== undefined ? pkg.duration : defaultDuration,
+          startTime: pkg.startTime !== undefined ? pkg.startTime : (initial ? initial.startTime : null),
+          endTime: pkg.endTime !== undefined ? pkg.endTime : (initial ? initial.endTime : null),
+        };
       });
       setPackagesList(merged);
     }
@@ -98,9 +96,8 @@ export function DataProvider({ children }) {
     if (!pkg) return;
 
     const startDate = new Date().toISOString().split('T')[0];
-    const endDate = (pkg.durationType === 'full-time' || pkg.durationType === 'time-based')
-      ? '2099-12-31'
-      : new Date(Date.now() + (pkg.duration || 30) * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const durationDays = pkg.duration || 30;
+    const endDate = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
     setMembers(prev => prev.map(m =>
       m.id === memberId
