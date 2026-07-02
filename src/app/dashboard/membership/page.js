@@ -241,9 +241,8 @@ export default function MembershipPage() {
     // Auto-create member record if currentCustomer is null
     if (!memberId && user) {
       const startDate = new Date().toISOString().split('T')[0];
-      const endDate = (selectedPurchasePkg.durationType === 'full-time' || selectedPurchasePkg.durationType === 'time-based')
-        ? '2099-12-31'
-        : new Date(Date.now() + (selectedPurchasePkg.duration || 30) * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      const durationDays = selectedPurchasePkg.duration || 30;
+      const endDate = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
       const newM = addMember({
         firstName: user.name.split(' ')[0] || user.name,

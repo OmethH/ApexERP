@@ -16,13 +16,13 @@ export const branches = [
 
 // --- Membership Packages ---
 export const packages = [
-  { id: 'PKG001', name: 'Daily Pass', duration: null, price: 500, type: 'daily', durationType: 'time-based', startTime: '06:00', endTime: '22:00', branchAccess: 'all', allowedBranches: [], status: 'active' },
-  { id: 'PKG002', name: 'Monthly', duration: null, price: 5000, type: 'monthly', durationType: 'time-based', startTime: '06:00', endTime: '22:00', branchAccess: 'all', allowedBranches: [], status: 'active' },
-  { id: 'PKG003', name: '3-Month', duration: null, price: 12000, type: 'quarterly', durationType: 'time-based', startTime: '06:00', endTime: '22:00', branchAccess: 'all', allowedBranches: [], status: 'active' },
-  { id: 'PKG004', name: '6-Month', duration: null, price: 22000, type: 'biannual', durationType: 'time-based', startTime: '06:00', endTime: '22:00', branchAccess: 'all', allowedBranches: [], status: 'active' },
-  { id: 'PKG005', name: 'Annual', duration: null, price: 40000, type: 'annual', durationType: 'time-based', startTime: '06:00', endTime: '22:00', branchAccess: 'all', allowedBranches: [], status: 'active' },
-  { id: 'PKG006', name: 'Couple Monthly', duration: null, price: 8000, type: 'monthly', durationType: 'time-based', startTime: '09:00', endTime: '17:00', branchAccess: 'purchase-branch', allowedBranches: [], status: 'active' },
-  { id: 'PKG007', name: 'Full-Time AC Unlimited', duration: null, price: 75000, type: 'premium', durationType: 'full-time', startTime: null, endTime: null, branchAccess: 'ac-only', allowedBranches: [], status: 'active' },
+  { id: 'PKG001', name: 'Daily Pass', duration: 1, price: 500, type: 'daily', durationType: 'time-based', startTime: '06:00', endTime: '22:00', branchAccess: 'all', allowedBranches: [], status: 'active' },
+  { id: 'PKG002', name: 'Monthly', duration: 30, price: 5000, type: 'monthly', durationType: 'time-based', startTime: '06:00', endTime: '22:00', branchAccess: 'all', allowedBranches: [], status: 'active' },
+  { id: 'PKG003', name: '3-Month', duration: 90, price: 12000, type: 'quarterly', durationType: 'time-based', startTime: '06:00', endTime: '22:00', branchAccess: 'all', allowedBranches: [], status: 'active' },
+  { id: 'PKG004', name: '6-Month', duration: 180, price: 22000, type: 'biannual', durationType: 'time-based', startTime: '06:00', endTime: '22:00', branchAccess: 'all', allowedBranches: [], status: 'active' },
+  { id: 'PKG005', name: 'Annual', duration: 365, price: 40000, type: 'annual', durationType: 'time-based', startTime: '06:00', endTime: '22:00', branchAccess: 'all', allowedBranches: [], status: 'active' },
+  { id: 'PKG006', name: 'Couple Monthly', duration: 30, price: 8000, type: 'monthly', durationType: 'time-based', startTime: '09:00', endTime: '17:00', branchAccess: 'purchase-branch', allowedBranches: [], status: 'active' },
+  { id: 'PKG007', name: 'Full-Time AC Unlimited', duration: 365, price: 75000, type: 'premium', durationType: 'full-time', startTime: null, endTime: null, branchAccess: 'ac-only', allowedBranches: [], status: 'active' },
 ];
 
 // Helper to generate dates

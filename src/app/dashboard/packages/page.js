@@ -164,6 +164,7 @@ function PackageFormModal({ pkg, branches, onClose, onSave }) {
     const errs = {};
     if (!form.name.trim()) errs.name = 'Package name is required';
     if (!form.price || Number(form.price) <= 0) errs.price = 'Price must be greater than 0';
+    if (!form.duration || Number(form.duration) <= 0) errs.duration = 'Active duration must be at least 1 day';
     if (form.durationType === 'time-based') {
       if (!form.startTime) {
         errs.startTime = 'Start time is required';
@@ -191,7 +192,7 @@ function PackageFormModal({ pkg, branches, onClose, onSave }) {
       name: form.name.trim(),
       price: Number(form.price),
       durationType: form.durationType,
-      duration: (form.durationType === 'full-time' || form.durationType === 'time-based') ? null : Number(form.duration),
+      duration: Number(form.duration),
       startTime: form.durationType === 'time-based' ? form.startTime : null,
       endTime: form.durationType === 'time-based' ? form.endTime : null,
       type: form.durationType === 'full-time' ? 'premium' : 'time-based',
@@ -255,6 +256,20 @@ function PackageFormModal({ pkg, branches, onClose, onSave }) {
                   {errors.price && <span className="form-error">{errors.price}</span>}
                 </div>
               </div>
+            </div>
+
+            {/* Active Duration Field */}
+            <div className="form-group">
+              <label className="form-label">Active Duration (Days) <span style={{ color: 'var(--accent-primary)' }}>*</span></label>
+              <input
+                className={`form-input${errors.duration ? ' form-input-error' : ''}`}
+                type="number"
+                min="1"
+                placeholder="e.g. 30"
+                value={form.duration}
+                onChange={e => set('duration', e.target.value)}
+              />
+              {errors.duration && <span className="form-error">{errors.duration}</span>}
             </div>
 
             {/* Duration Type Toggle */}
