@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { demoUsers } from '@/data/mockData';
 
 const AuthContext = createContext(null);
@@ -9,6 +9,21 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
   const [registeredUsers, setRegisteredUsers] = useState([]);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('pw_registered_users');
+    if (saved) {
+      setRegisteredUsers(JSON.parse(saved));
+    }
+    setIsLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    if (isLoaded) {
+      localStorage.setItem('pw_registered_users', JSON.stringify(registeredUsers));
+    }
+  }, [registeredUsers, isLoaded]);
 
   const registerUser = useCallback((email, password, role, profileId, name, branchId) => {
     const newUser = {

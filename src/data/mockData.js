@@ -4,23 +4,25 @@
 
 // --- Branches ---
 export const branches = [
-  { id: 'BR001', name: 'Power World Colombo', location: 'Colombo 03', phone: '+94 11 234 5678', email: 'colombo@powerworld.lk', manager: 'Ruwan Perera', openDate: '2018-03-15', status: 'active' },
-  { id: 'BR002', name: 'Power World Kandy', location: 'Kandy City', phone: '+94 81 234 5678', email: 'kandy@powerworld.lk', manager: 'Nuwan Silva', openDate: '2019-06-01', status: 'active' },
-  { id: 'BR003', name: 'Power World Negombo', location: 'Negombo Beach Road', phone: '+94 31 234 5678', email: 'negombo@powerworld.lk', manager: 'Kasun Fernando', openDate: '2020-01-10', status: 'active' },
-  { id: 'BR004', name: 'Power World Galle', location: 'Galle Fort Area', phone: '+94 91 234 5678', email: 'galle@powerworld.lk', manager: 'Dilshan Jayawardena', openDate: '2020-08-20', status: 'active' },
-  { id: 'BR005', name: 'Power World Rajagiriya', location: 'Rajagiriya', phone: '+94 11 345 6789', email: 'rajagiriya@powerworld.lk', manager: 'Chamara Bandara', openDate: '2021-02-14', status: 'active' },
-  { id: 'BR006', name: 'Power World Nugegoda', location: 'Nugegoda Junction', phone: '+94 11 456 7890', email: 'nugegoda@powerworld.lk', manager: 'Tharanga Mendis', openDate: '2021-09-05', status: 'active' },
-  { id: 'BR007', name: 'Power World Wattala', location: 'Wattala', phone: '+94 11 567 8901', email: 'wattala@powerworld.lk', manager: 'Lahiru Kumara', openDate: '2022-04-18', status: 'active' },
-  { id: 'BR008', name: 'Power World Maharagama', location: 'Maharagama', phone: '+94 11 678 9012', email: 'maharagama@powerworld.lk', manager: 'Saman Wijesuriya', openDate: '2023-01-02', status: 'active' },
+  { id: 'BR001', name: 'Power World Colombo', address: '45, Galle Road, Colombo 03', location: 'Colombo 03', phone: '+94 11 234 5678', email: 'colombo@powerworld.lk', manager: 'Ruwan Perera', openDate: '2018-03-15', status: 'active', isAC: true, googleMapsLink: null, image: null },
+  { id: 'BR002', name: 'Power World Kandy', address: '12, Peradeniya Road, Kandy City', location: 'Kandy City', phone: '+94 81 234 5678', email: 'kandy@powerworld.lk', manager: 'Nuwan Silva', openDate: '2019-06-01', status: 'active', isAC: true, googleMapsLink: null, image: null },
+  { id: 'BR003', name: 'Power World Negombo', address: '88, Beach Road, Negombo', location: 'Negombo Beach Road', phone: '+94 31 234 5678', email: 'negombo@powerworld.lk', manager: 'Kasun Fernando', openDate: '2020-01-10', status: 'active', isAC: false, googleMapsLink: null, image: null },
+  { id: 'BR004', name: 'Power World Galle', address: '3, Wakwella Road, Galle Fort Area', location: 'Galle Fort Area', phone: '+94 91 234 5678', email: 'galle@powerworld.lk', manager: 'Dilshan Jayawardena', openDate: '2020-08-20', status: 'active', isAC: true, googleMapsLink: null, image: null },
+  { id: 'BR005', name: 'Power World Rajagiriya', address: '22, Rajagiriya Junction, Rajagiriya', location: 'Rajagiriya', phone: '+94 11 345 6789', email: 'rajagiriya@powerworld.lk', manager: 'Chamara Bandara', openDate: '2021-02-14', status: 'active', isAC: true, googleMapsLink: null, image: null },
+  { id: 'BR006', name: 'Power World Nugegoda', address: '56, High Level Road, Nugegoda Junction', location: 'Nugegoda Junction', phone: '+94 11 456 7890', email: 'nugegoda@powerworld.lk', manager: 'Tharanga Mendis', openDate: '2021-09-05', status: 'active', isAC: false, googleMapsLink: null, image: null },
+  { id: 'BR007', name: 'Power World Wattala', address: '9, Negombo Road, Wattala', location: 'Wattala', phone: '+94 11 567 8901', email: 'wattala@powerworld.lk', manager: 'Lahiru Kumara', openDate: '2022-04-18', status: 'active', isAC: true, googleMapsLink: null, image: null },
+  { id: 'BR008', name: 'Power World Maharagama', address: '34, High Level Road, Maharagama', location: 'Maharagama', phone: '+94 11 678 9012', email: 'maharagama@powerworld.lk', manager: 'Saman Wijesuriya', openDate: '2023-01-02', status: 'active', isAC: true, googleMapsLink: null, image: null },
 ];
 
 // --- Membership Packages ---
 export const packages = [
-  { id: 'PKG001', name: 'Daily Pass', duration: 1, price: 500, type: 'daily' },
-  { id: 'PKG002', name: 'Monthly', duration: 30, price: 5000, type: 'monthly' },
-  { id: 'PKG003', name: '3-Month', duration: 90, price: 12000, type: 'quarterly' },
-  { id: 'PKG004', name: '6-Month', duration: 180, price: 22000, type: 'biannual' },
-  { id: 'PKG005', name: 'Annual', duration: 365, price: 40000, type: 'annual' },
+  { id: 'PKG001', name: 'Daily Pass', duration: 1, price: 500, type: 'daily', durationType: 'time-based', branchAccess: 'all', allowedBranches: [], status: 'active' },
+  { id: 'PKG002', name: 'Monthly', duration: 30, price: 5000, type: 'monthly', durationType: 'time-based', branchAccess: 'all', allowedBranches: [], status: 'active' },
+  { id: 'PKG003', name: '3-Month', duration: 90, price: 12000, type: 'quarterly', durationType: 'time-based', branchAccess: 'all', allowedBranches: [], status: 'active' },
+  { id: 'PKG004', name: '6-Month', duration: 180, price: 22000, type: 'biannual', durationType: 'time-based', branchAccess: 'all', allowedBranches: [], status: 'active' },
+  { id: 'PKG005', name: 'Annual', duration: 365, price: 40000, type: 'annual', durationType: 'time-based', branchAccess: 'all', allowedBranches: [], status: 'active' },
+  { id: 'PKG006', name: 'Couple Monthly', duration: 30, price: 8000, type: 'monthly', durationType: 'time-based', branchAccess: 'purchase-branch', allowedBranches: [], status: 'active' },
+  { id: 'PKG007', name: 'Full-Time AC Unlimited', duration: null, price: 75000, type: 'premium', durationType: 'full-time', branchAccess: 'ac-only', allowedBranches: [], status: 'active' },
 ];
 
 // Helper to generate dates
