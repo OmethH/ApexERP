@@ -15,6 +15,7 @@ import {
   X,
   User,
   Package,
+  MessageSquare,
 } from 'lucide-react';
 
 const navItems = [
@@ -24,6 +25,7 @@ const navItems = [
   { href: '/dashboard/packages', label: 'Packages', icon: Package, section: 'Management', roles: ['Admin'] },
   { href: '/dashboard/staff', label: 'Staff', icon: UserCog, section: 'Management', roles: ['Admin', 'Manager', 'Staff'] },
   { href: '/dashboard/payments', label: 'Payments', icon: CreditCard, section: 'Finance', roles: ['Admin', 'Manager', 'Staff'] },
+  { href: '/dashboard/inquiries', label: 'Support Inquiries', icon: MessageSquare, section: 'Support', roles: ['Admin', 'Manager', 'Staff', 'Customer'] },
   { href: '/dashboard/profile', label: 'My Profile', icon: User, section: 'Personal', roles: ['Admin', 'Manager', 'Staff', 'Trainer', 'Customer'] },
   { href: '/dashboard/membership', label: 'Membership Status', icon: Dumbbell, section: 'Personal', roles: ['Trainer', 'Customer'] },
 ];

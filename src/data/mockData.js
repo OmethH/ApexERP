@@ -256,3 +256,89 @@ export const demoUsers = [
   { id: 'USR004', name: 'Dilshan Jayawardena', email: 'trainer@powerworld.com', password: 'trainer123', role: 'Trainer', branchId: 'BR001', staffId: 'STF004' },
   { id: 'USR005', name: 'Ashan Perera', email: 'customer@powerworld.com', password: 'customer123', role: 'Customer', branchId: 'BR001', memberId: 'MEM001' },
 ];
+
+// --- Initial Mock Support Inquiries ---
+export const initialInquiries = [
+  {
+    id: 'INQ001',
+    memberId: 'MEM001',
+    memberName: 'Ashan Perera',
+    subject: 'Membership Freeze Request',
+    status: 'replied',
+    createdAt: '2026-06-28T09:00:00.000Z',
+    updatedAt: '2026-06-29T10:30:00.000Z',
+    messages: [
+      {
+        id: 'MSG001',
+        senderId: 'USR005',
+        senderName: 'Ashan Perera',
+        senderRole: 'Customer',
+        content: 'Hi Admin, I will be travelling out of the country for 2 weeks. Can I temporarily freeze my membership starting next Monday?',
+        timestamp: '2026-06-28T09:00:00.000Z'
+      },
+      {
+        id: 'MSG002',
+        senderId: 'USR001',
+        senderName: 'Admin User',
+        senderRole: 'Admin',
+        content: 'Hello Ashan. Certainly! We can freeze your membership for up to 30 days. Please reply with the exact dates and we will process it.',
+        timestamp: '2026-06-29T10:30:00.000Z'
+      }
+    ]
+  },
+  {
+    id: 'INQ002',
+    memberId: 'MEM002',
+    memberName: 'Nimali Silva',
+    subject: 'Trainer Change Request',
+    status: 'open',
+    createdAt: '2026-07-02T08:15:00.000Z',
+    updatedAt: '2026-07-02T08:15:00.000Z',
+    messages: [
+      {
+        id: 'MSG003',
+        senderId: 'USR006',
+        senderName: 'Nimali Silva',
+        senderRole: 'Customer',
+        content: 'Hello, I want to change my current trainer from Coach Dilshan to Coach Chamara because our timings do not align anymore. Is this possible?',
+        timestamp: '2026-07-02T08:15:00.000Z'
+      }
+    ]
+  },
+  {
+    id: 'INQ003',
+    memberId: 'MEM003',
+    memberName: 'Kavindu Fernando',
+    subject: 'Incorrect Payment Invoice',
+    status: 'closed',
+    createdAt: '2026-06-15T14:20:00.000Z',
+    updatedAt: '2026-06-16T09:15:00.000Z',
+    messages: [
+      {
+        id: 'MSG004',
+        senderId: 'USR007',
+        senderName: 'Kavindu Fernando',
+        senderRole: 'Customer',
+        content: 'Hi, I received an invoice for LKR 5,000 but I already paid for a 3-month package last week. Please verify.',
+        timestamp: '2026-06-15T14:20:00.000Z'
+      },
+      {
+        id: 'MSG005',
+        senderId: 'USR001',
+        senderName: 'Admin User',
+        senderRole: 'Admin',
+        content: 'Hello Kavindu. We apologize for the error. The system auto-generated that invoice. I have checked your records and your 3-month package is active. I have canceled the incorrect invoice. Have a great day!',
+        timestamp: '2026-06-16T09:12:00.000Z'
+      },
+      {
+        id: 'MSG006',
+        senderId: 'USR007',
+        senderName: 'Kavindu Fernando',
+        senderRole: 'Customer',
+        content: 'Thank you for the quick response! That is all I needed.',
+        timestamp: '2026-06-16T09:15:00.000Z'
+      }
+    ]
+  }
+];
+
