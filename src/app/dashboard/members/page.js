@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { AgGridReact } from 'ag-grid-react';
-import { useData } from '@/context/DataContext';
 import Header from '@/components/Header';
 import Badge from '@/components/Badge';
 import Modal from '@/components/Modal';
@@ -13,7 +12,9 @@ import Link from 'next/link';
 const ITEMS_PER_PAGE = 10;
 
 export default function MembersPage() {
-  const { members, branches, packages, addMember, deleteMember, renewMembership } = useData();
+  const [members, setMembers] = useState([]);
+  const [branches, setBranches] = useState([]);
+  const [packages, setPackages] = useState([]);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [branchFilter, setBranchFilter] = useState('all');
@@ -29,6 +30,51 @@ export default function MembersPage() {
     dateOfBirth: '', address: '', branchId: '', packageId: '', emergencyContact: '',
   });
 
+  const fetchMembers = useCallback(async () => {
+    try {
+      const res = await fetch('/api/members');
+      if (res.ok) {
+        const data = await res.json();
+        setMembers(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch members:', err);
+    }
+  }, []);
+
+  const fetchBranches = useCallback(async () => {
+    try {
+      const res = await fetch('/api/branches');
+      if (res.ok) {
+        const data = await res.json();
+        setBranches(Array.isArray(data) ? data : []);
+        if (data.length > 0 && !form.branchId) {
+          setForm(prev => ({ ...prev, branchId: data[0].id }));
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch branches:', err);
+    }
+  }, [form.branchId]);
+
+  const fetchPackages = useCallback(async () => {
+    try {
+      const res = await fetch('/api/packages');
+      if (res.ok) {
+        const data = await res.json();
+        setPackages(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch packages:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchMembers();
+    fetchBranches();
+    fetchPackages();
+  }, [fetchMembers, fetchBranches, fetchPackages]);
+
   // Filtered members
   const filtered = useMemo(() => {
     return members.filter(m => {
@@ -41,34 +87,100 @@ export default function MembersPage() {
     });
   }, [members, search, statusFilter, branchFilter, packageFilter]);
 
-
-
-  const handleAddMember = () => {
+  const handleAddMember = async () => {
     const pkg = packages.find(p => p.id === form.packageId);
     const startDate = new Date().toISOString().split('T')[0];
     const endDate = pkg
       ? new Date(Date.now() + pkg.duration * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
       : startDate;
 
-    addMember({
-      ...form,
-      fullName: `${form.firstName} ${form.lastName}`,
-      packageName: pkg?.name || '',
-      membershipStart: startDate,
-      membershipEnd: endDate,
-      status: 'active',
-      notes: '',
-    });
+    try {
+      const res = await fetch('/api/members', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...form,
+          fullName: `${form.firstName} ${form.lastName}`,
+          packageName: pkg?.name || '',
+          membershipStart: startDate,
+          membershipEnd: endDate,
+          status: 'active',
+          notes: '',
+        }),
+      });
 
-    setShowAddModal(false);
-    setForm({ firstName: '', lastName: '', email: '', phone: '', gender: 'Male', dateOfBirth: '', address: '', branchId: '', packageId: '', emergencyContact: '' });
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || 'Failed to add member');
+      }
+
+      await fetchMembers();
+      setShowAddModal(false);
+      setForm({ firstName: '', lastName: '', email: '', phone: '', gender: 'Male', dateOfBirth: '', address: '', branchId: branches[0]?.id || '', packageId: '', emergencyContact: '' });
+    } catch (err) {
+      console.error('Failed to add member:', err);
+      alert(err.message || 'Error adding member');
+    }
   };
 
-  const handleRenew = () => {
+  const handleRenew = async () => {
     if (showRenewModal && renewPackage) {
-      renewMembership(showRenewModal.id, renewPackage);
-      setShowRenewModal(null);
-      setRenewPackage('');
+      const pkg = packages.find(p => p.id === renewPackage);
+      if (!pkg) return;
+
+      const startDate = new Date().toISOString().split('T')[0];
+      const durationDays = pkg.duration || 30;
+      const endDate = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+      try {
+        const memberRes = await fetch(`/api/members/${showRenewModal.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            packageId: renewPackage,
+            packageName: pkg.name,
+            membershipStart: startDate,
+            membershipEnd: endDate,
+            status: 'active',
+          }),
+        });
+
+        if (!memberRes.ok) throw new Error('Failed to update member package');
+
+        const paymentRes = await fetch('/api/payments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            memberId: showRenewModal.id,
+            memberName: showRenewModal.fullName,
+            branchId: showRenewModal.branchId,
+            amount: pkg.price,
+            packageId: renewPackage,
+            packageName: pkg.name,
+            method: 'Cash',
+          }),
+        });
+
+        if (!paymentRes.ok) throw new Error('Failed to record payment');
+
+        await fetchMembers();
+        setShowRenewModal(null);
+        setRenewPackage('');
+      } catch (err) {
+        console.error('Failed to renew membership:', err);
+        alert(err.message || 'Error renewing membership');
+      }
+    }
+  };
+
+  const deleteMember = async (id) => {
+    try {
+      const res = await fetch(`/api/members/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete member');
+      await fetchMembers();
+    } catch (err) {
+      console.error('Failed to delete member:', err);
+      alert(err.message || 'Error deleting member');
     }
   };
 

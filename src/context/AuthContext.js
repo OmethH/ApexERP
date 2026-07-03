@@ -1,69 +1,64 @@
 'use client';
 
-import { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { demoUsers } from '@/data/mockData';
+import { createContext, useContext, useState, useCallback } from 'react';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [registeredUsers, setRegisteredUsers] = useState([]);
-  const [isLoaded, setIsLoaded] = useState(false);
 
-  useEffect(() => {
-    const saved = localStorage.getItem('pw_registered_users');
-    if (saved) {
-      setRegisteredUsers(JSON.parse(saved));
+  const login = useCallback(async (email, password) => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'login', email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Invalid email or password');
+      }
+
+      setUser(data);
+      return data;
+    } catch (err) {
+      throw err;
+    } finally {
+      setLoading(false);
     }
-    setIsLoaded(true);
   }, []);
 
-  useEffect(() => {
-    if (isLoaded) {
-      localStorage.setItem('pw_registered_users', JSON.stringify(registeredUsers));
+  const registerUser = useCallback(async (email, password, role, profileId, name, branchId) => {
+    try {
+      const res = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'register',
+          email,
+          password,
+          role,
+          name,
+          branchId,
+          ...(role === 'Customer' ? { memberId: profileId } : { staffId: profileId }),
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Registration failed');
+      }
+
+      return data;
+    } catch (err) {
+      throw err;
     }
-  }, [registeredUsers, isLoaded]);
-
-  const registerUser = useCallback((email, password, role, profileId, name, branchId) => {
-    const newUser = {
-      id: `USR${String(demoUsers.length + registeredUsers.length + 1).padStart(3, '0')}`,
-      name,
-      email,
-      password,
-      role,
-      branchId,
-      ...(role === 'Customer' ? { memberId: profileId } : { staffId: profileId }),
-    };
-    setRegisteredUsers(prev => [...prev, newUser]);
-    return newUser;
-  }, [registeredUsers.length]);
-
-  const login = useCallback((email, password) => {
-    setLoading(true);
-
-    return new Promise((resolve, reject) => {
-      // Simulate network delay
-      setTimeout(() => {
-        const foundUser = [
-          ...demoUsers,
-          ...registeredUsers
-        ].find(
-          u => u.email.toLowerCase() === email.toLowerCase() && u.password === password
-        );
-
-        if (foundUser) {
-          const { password: _, ...safeUser } = foundUser;
-          setUser(safeUser);
-          setLoading(false);
-          resolve(safeUser);
-        } else {
-          setLoading(false);
-          reject(new Error('Invalid email or password'));
-        }
-      }, 800);
-    });
-  }, [registeredUsers]);
+  }, []);
 
   const logout = useCallback(() => {
     setUser(null);

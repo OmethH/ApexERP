@@ -1,9 +1,7 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { AgGridReact } from 'ag-grid-react';
-import { useData } from '@/context/DataContext';
-import { useAuth } from '@/context/AuthContext';
 import Header from '@/components/Header';
 import Badge from '@/components/Badge';
 import Modal from '@/components/Modal';
@@ -13,8 +11,8 @@ import { Search, Plus, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 const ITEMS_PER_PAGE = 10;
 
 export default function StaffPage() {
-  const { staff, branches, addStaffMember, deleteStaff } = useData();
-  const { registerUser } = useAuth();
+  const [staff, setStaff] = useState([]);
+  const [branches, setBranches] = useState([]);
   const [search, setSearch] = useState('');
   const [branchFilter, setBranchFilter] = useState('all');
   const [roleFilter, setRoleFilter] = useState('all');
@@ -25,6 +23,38 @@ export default function StaffPage() {
     firstName: '', lastName: '', email: '', phone: '',
     role: 'Trainer', branchId: '', salary: '', password: '',
   });
+
+  const fetchStaff = useCallback(async () => {
+    try {
+      const res = await fetch('/api/staff');
+      if (res.ok) {
+        const data = await res.json();
+        setStaff(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch staff:', err);
+    }
+  }, []);
+
+  const fetchBranches = useCallback(async () => {
+    try {
+      const res = await fetch('/api/branches');
+      if (res.ok) {
+        const data = await res.json();
+        setBranches(Array.isArray(data) ? data : []);
+        if (data.length > 0 && !form.branchId) {
+          setForm(prev => ({ ...prev, branchId: data[0].id }));
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch branches:', err);
+    }
+  }, [form.branchId]);
+
+  useEffect(() => {
+    fetchStaff();
+    fetchBranches();
+  }, [fetchStaff, fetchBranches]);
 
   const roles = useMemo(() => [...new Set(staff.map(s => s.role))], [staff]);
 
@@ -38,7 +68,16 @@ export default function StaffPage() {
     });
   }, [staff, search, branchFilter, roleFilter]);
 
-
+  const deleteStaff = async (id) => {
+    try {
+      const res = await fetch(`/api/staff/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete staff member');
+      await fetchStaff();
+    } catch (err) {
+      console.error('Failed to delete staff:', err);
+      alert(err.message || 'Error deleting staff member');
+    }
+  };
 
   const getBranchName = (branchId) => {
     const branch = branches.find(b => b.id === branchId);
@@ -133,21 +172,32 @@ export default function StaffPage() {
         );
       }
     }
-  ], [branches, deleteStaff]);
+  ], [branches]);
 
-  const handleAdd = () => {
-    const newStaff = addStaffMember({
-      ...form,
-      fullName: `${form.firstName} ${form.lastName}`,
-      salary: parseInt(form.salary) || 0,
-    });
-    
-    if (newStaff && form.password) {
-      registerUser(form.email, form.password, form.role, newStaff.id, newStaff.fullName, newStaff.branchId);
+  const handleAdd = async () => {
+    try {
+      const res = await fetch('/api/staff', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...form,
+          fullName: `${form.firstName} ${form.lastName}`,
+          salary: parseInt(form.salary) || 0,
+        }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || 'Failed to add staff member');
+      }
+
+      await fetchStaff();
+      setShowAddModal(false);
+      setForm({ firstName: '', lastName: '', email: '', phone: '', role: 'Trainer', branchId: branches[0]?.id || '', salary: '', password: '' });
+    } catch (err) {
+      console.error('Failed to add staff:', err);
+      alert(err.message || 'Error adding staff member');
     }
-    
-    setShowAddModal(false);
-    setForm({ firstName: '', lastName: '', email: '', phone: '', role: 'Trainer', branchId: '', salary: '', password: '' });
   };
 
   return (

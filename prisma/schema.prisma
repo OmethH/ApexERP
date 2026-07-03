@@ -1,0 +1,148 @@
+// This is your Prisma schema file for ApexERP
+// In Prisma 7+, the database URL is configured in prisma.config.ts
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Branch ───────────────────────────────────────────────
+model Branch {
+  id             String   @id @default(cuid())
+  name           String
+  address        String
+  location       String
+  phone          String
+  email          String
+  manager        String
+  openDate       String
+  status         String   @default("active")
+  isAC           Boolean  @default(false)
+  googleMapsLink String?
+  image          String?
+
+  members  Member[]
+  staff    Staff[]
+  trainers Trainer[]
+  payments Payment[]
+}
+
+// ─── Package ──────────────────────────────────────────────
+model Package {
+  id             String   @id @default(cuid())
+  name           String
+  duration       Int      // in days
+  price          Float
+  type           String   // daily, monthly, quarterly, biannual, annual, premium
+  durationType   String   // time-based, full-time
+  startTime      String?  // e.g. "06:00"
+  endTime        String?  // e.g. "22:00"
+  branchAccess   String   @default("all") // all, purchase-branch, ac-only
+  allowedBranches String[] @default([])
+  status         String   @default("active")
+
+  members  Member[]
+}
+
+// ─── Member ───────────────────────────────────────────────
+model Member {
+  id               String   @id @default(cuid())
+  firstName        String
+  lastName         String
+  fullName         String
+  email            String   @unique
+  password         String   @default("customer123")
+  phone            String
+  gender           String
+  dateOfBirth      String?
+  address          String?
+  membershipStart  String?
+  membershipEnd    String?
+  status           String   @default("active")
+  joinDate         String
+  emergencyContact String?
+  notes            String?
+
+  branchId    String
+  branch      Branch   @relation(fields: [branchId], references: [id])
+
+  packageId   String?
+  packageName String?
+  package     Package? @relation(fields: [packageId], references: [id])
+
+  payments Payment[]
+}
+
+// ─── Staff ────────────────────────────────────────────────
+model Staff {
+  id        String @id @default(cuid())
+  firstName String
+  lastName  String
+  fullName  String
+  email     String @unique
+  phone     String
+  role      String // Manager, Receptionist, Cleaner (Note: Trainer role moved to Trainer model)
+  salary    Float  @default(0)
+  joinDate  String
+  status    String @default("active")
+
+  branchId String
+  branch   Branch @relation(fields: [branchId], references: [id])
+
+  user     User?
+}
+
+// ─── Trainer ──────────────────────────────────────────────
+model Trainer {
+  id        String @id @default(cuid())
+  firstName String
+  lastName  String
+  fullName  String
+  email     String @unique
+  password  String @default("trainer123")
+  phone     String
+  role      String @default("Trainer")
+  salary    Float  @default(0)
+  joinDate  String
+  status    String @default("active")
+
+  branchId String
+  branch   Branch @relation(fields: [branchId], references: [id])
+}
+
+// ─── Payment ──────────────────────────────────────────────
+model Payment {
+  id          String @id @default(cuid())
+  amount      Float
+  date        String
+  status      String @default("completed")
+  receiptNo   String @unique
+  method      String // Cash, Card, Bank Transfer
+  packageId   String?
+  packageName String?
+  memberName  String?
+
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id])
+
+  branchId String
+  branch   Branch @relation(fields: [branchId], references: [id])
+}
+
+// ─── User (login accounts for Admin, Manager, Staff) ──────
+model User {
+  id       String @id @default(cuid())
+  name     String
+  email    String @unique
+  password String
+  role     String // Admin, Manager, Staff
+
+  branchId String?
+
+  staffId  String?  @unique
+  staff    Staff?   @relation(fields: [staffId], references: [id])
+}
