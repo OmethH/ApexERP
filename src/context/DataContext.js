@@ -8,6 +8,8 @@ import {
   branches as initialBranches,
   packages as initialPackages,
   initialInquiries,
+  initialQuestions,
+  initialSubmissions,
 } from '@/data/mockData';
 
 const DataContext = createContext(null);
@@ -19,6 +21,8 @@ export function DataProvider({ children }) {
   const [branchesList, setBranchesList] = useState(initialBranches);
   const [packagesList, setPackagesList] = useState(initialPackages);
   const [inquiries, setInquiries] = useState(initialInquiries);
+  const [questions, setQuestions] = useState([]);
+  const [submissions, setSubmissions] = useState([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
@@ -28,12 +32,24 @@ export function DataProvider({ children }) {
     const savedBranches = localStorage.getItem('pw_branches');
     const savedPackages = localStorage.getItem('pw_packages');
     const savedInquiries = localStorage.getItem('pw_inquiries');
+    const savedQuestions = localStorage.getItem('pw_questions');
+    const savedSubmissions = localStorage.getItem('pw_submissions');
 
     if (savedMembers) setMembers(JSON.parse(savedMembers));
     if (savedStaff) setStaffList(JSON.parse(savedStaff));
     if (savedPayments) setPaymentsList(JSON.parse(savedPayments));
     if (savedBranches) setBranchesList(JSON.parse(savedBranches));
     if (savedInquiries) setInquiries(JSON.parse(savedInquiries));
+    if (savedQuestions) {
+      setQuestions(JSON.parse(savedQuestions));
+    } else {
+      setQuestions(initialQuestions);
+    }
+    if (savedSubmissions) {
+      setSubmissions(JSON.parse(savedSubmissions));
+    } else {
+      setSubmissions(initialSubmissions);
+    }
     if (savedPackages) {
       const parsed = JSON.parse(savedPackages);
       const merged = parsed.map(pkg => {
@@ -75,6 +91,51 @@ export function DataProvider({ children }) {
   useEffect(() => {
     if (isLoaded) localStorage.setItem('pw_inquiries', JSON.stringify(inquiries));
   }, [inquiries, isLoaded]);
+
+  useEffect(() => {
+    if (isLoaded) localStorage.setItem('pw_questions', JSON.stringify(questions));
+  }, [questions, isLoaded]);
+
+  useEffect(() => {
+    if (isLoaded) localStorage.setItem('pw_submissions', JSON.stringify(submissions));
+  }, [submissions, isLoaded]);
+
+  // --- Questionnaire & Submissions Actions ---
+  const addQuestion = useCallback((questionData) => {
+    const nextNum = questions.length > 0 
+      ? Math.max(...questions.map(q => parseInt(q.id.replace('Q', ''), 10) || 0)) + 1 
+      : 1;
+    const newQuestion = {
+      ...questionData,
+      id: `Q${String(nextNum).padStart(3, '0')}`,
+    };
+    setQuestions(prev => [...prev, newQuestion]);
+    return newQuestion;
+  }, [questions]);
+
+  const updateQuestion = useCallback((id, updates) => {
+    setQuestions(prev => prev.map(q => q.id === id ? { ...q, ...updates } : q));
+  }, []);
+
+  const deleteQuestion = useCallback((id) => {
+    setQuestions(prev => prev.filter(q => q.id !== id));
+  }, []);
+
+  const submitAnswers = useCallback((memberId, memberName, email, answers) => {
+    const nextNum = submissions.length > 0
+      ? Math.max(...submissions.map(s => parseInt(s.id.replace('SUB', ''), 10) || 0)) + 1
+      : 1;
+    const newSubmission = {
+      id: `SUB${String(nextNum).padStart(3, '0')}`,
+      memberId,
+      memberName,
+      email,
+      submittedAt: new Date().toISOString(),
+      answers,
+    };
+    setSubmissions(prev => [newSubmission, ...prev]);
+    return newSubmission;
+  }, [submissions]);
 
   // --- Member CRUD ---
   const addMember = useCallback((memberData) => {
@@ -338,6 +399,13 @@ export function DataProvider({ children }) {
     addInquiry,
     addInquiryMessage,
     updateInquiryStatus,
+    questions,
+    submissions,
+    addQuestion,
+    updateQuestion,
+    deleteQuestion,
+    submitAnswers,
+    isLoaded,
   };
 
   return (

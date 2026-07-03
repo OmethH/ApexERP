@@ -3,10 +3,13 @@
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { useData } from '@/context/DataContext';
 import Sidebar from '@/components/Sidebar';
+import QuestionnaireWizard from '@/components/QuestionnaireWizard';
 
 export default function DashboardLayout({ children }) {
   const { user } = useAuth();
+  const { questions, submissions, submitAnswers, isLoaded } = useData();
   const router = useRouter();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -31,11 +34,32 @@ export default function DashboardLayout({ children }) {
     }
   }, [user, router, pathname]);
 
-  if (!user) {
+  if (!user || !isLoaded) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div className="spinner" />
       </div>
+    );
+  }
+
+  // Questionnaire interception for new customers
+  const isCustomer = user.role === 'Customer';
+  const hasSubmitted = isCustomer && submissions.some(
+    s => s.memberId === user.memberId || s.email?.toLowerCase() === user.email?.toLowerCase()
+  );
+
+  const handleQuestionnaireSubmit = (answers) => {
+    const memberId = user.memberId || `MEM${String(Date.now()).slice(-3)}`;
+    submitAnswers(memberId, user.name, user.email, answers);
+  };
+
+  if (isCustomer && !hasSubmitted) {
+    return (
+      <QuestionnaireWizard
+        user={user}
+        questions={questions}
+        onSubmit={handleQuestionnaireSubmit}
+      />
     );
   }
 
