@@ -1,8 +1,7 @@
 'use client';
 
-import { use, useMemo } from 'react';
+import { use, useMemo, useState, useEffect } from 'react';
 import { AgGridReact } from 'ag-grid-react';
-import { useData } from '@/context/DataContext';
 import Header from '@/components/Header';
 import StatCard from '@/components/StatCard';
 import Badge from '@/components/Badge';
@@ -15,7 +14,44 @@ import Link from 'next/link';
 
 export default function BranchDetailPage({ params }) {
   const resolvedParams = use(params);
-  const { branches, members, staff, payments } = useData();
+  const [branches, setBranches] = useState([]);
+  const [members, setMembers] = useState([]);
+  const [staff, setStaff] = useState([]);
+  const [payments, setPayments] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    async function loadData() {
+      try {
+        const [branchesRes, membersRes, staffRes, paymentsRes] = await Promise.all([
+          fetch('/api/branches'),
+          fetch('/api/members'),
+          fetch('/api/staff'),
+          fetch('/api/payments'),
+        ]);
+
+        const [branchesData, membersData, staffData, paymentsData] = await Promise.all([
+          branchesRes.json(),
+          membersRes.json(),
+          staffRes.json(),
+          paymentsRes.json(),
+        ]);
+
+        if (active) {
+          setBranches(Array.isArray(branchesData) ? branchesData : []);
+          setMembers(Array.isArray(membersData) ? membersData : []);
+          setStaff(Array.isArray(staffData) ? staffData : []);
+          setPayments(Array.isArray(paymentsData) ? paymentsData : []);
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error('Failed to load branch detail data:', err);
+      }
+    }
+    loadData();
+    return () => { active = false; };
+  }, []);
 
   const branch = branches.find(b => b.id === resolvedParams.id);
   const branchMembers = useMemo(() => members.filter(m => m.branchId === resolvedParams.id), [members, resolvedParams.id]);
@@ -23,6 +59,37 @@ export default function BranchDetailPage({ params }) {
   const branchPayments = useMemo(() => payments.filter(p => p.branchId === resolvedParams.id), [payments, resolvedParams.id]);
   const branchRevenue = branchPayments.reduce((sum, p) => sum + p.amount, 0);
   const activeMembers = branchMembers.filter(m => m.status === 'active').length;
+
+  if (loading) {
+    return (
+      <>
+        <Header title="Branches" subtitle="Branch Details" />
+        <div className="dashboard-content">
+          <div className="empty-state">
+            <div className="spinner" />
+            <h3>Loading Branch Details...</h3>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  if (!branch) {
+    return (
+      <>
+        <Header title="Branch Not Found" subtitle="Branch Details" />
+        <div className="dashboard-content">
+          <div className="empty-state">
+            <h3>Branch not found</h3>
+            <p>The branch you&apos;re looking for doesn&apos;t exist.</p>
+            <Link href="/dashboard/branches" className="btn btn-primary" style={{ marginTop: '16px' }}>
+              Back to Branches
+            </Link>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   const memberColDefs = useMemo(() => [
     {

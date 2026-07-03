@@ -1,8 +1,7 @@
 'use client';
 
-import { use, useMemo } from 'react';
+import { use, useState, useEffect, useMemo, useCallback } from 'react';
 import { AgGridReact } from 'ag-grid-react';
-import { useData } from '@/context/DataContext';
 import Header from '@/components/Header';
 import Badge from '@/components/Badge';
 import { formatDate, formatCurrency, getInitials } from '@/utils/formatters';
@@ -11,14 +10,84 @@ import Link from 'next/link';
 
 export default function MemberDetailPage({ params }) {
   const resolvedParams = use(params);
-  const { getMemberById, payments, branches, packages, renewMembership } = useData();
+  const [member, setMember] = useState(null);
+  const [packages, setPackages] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const member = getMemberById(resolvedParams.id);
-  const branch = branches.find(b => b.id === member?.branchId);
-  const memberPayments = useMemo(
-    () => payments.filter(p => p.memberId === member?.id),
-    [payments, member]
-  );
+  const loadMemberData = useCallback(async () => {
+    try {
+      const [memberRes, packagesRes] = await Promise.all([
+        fetch(`/api/members/${resolvedParams.id}`),
+        fetch('/api/packages'),
+      ]);
+
+      if (memberRes.ok) {
+        const memberData = await memberRes.json();
+        setMember(memberData);
+      }
+      if (packagesRes.ok) {
+        const packagesData = await packagesRes.json();
+        setPackages(packagesData);
+      }
+      setLoading(false);
+    } catch (err) {
+      console.error('Failed to load member detail data:', err);
+      setLoading(false);
+    }
+  }, [resolvedParams.id]);
+
+  useEffect(() => {
+    loadMemberData();
+  }, [loadMemberData]);
+
+  const handleRenew = async (memberId, packageId) => {
+    const pkg = packages.find(p => p.id === packageId);
+    if (!pkg) return;
+
+    const startDate = new Date().toISOString().split('T')[0];
+    const durationDays = pkg.duration || 30;
+    const endDate = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    try {
+      const memberRes = await fetch(`/api/members/${memberId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          packageId,
+          packageName: pkg.name,
+          membershipStart: startDate,
+          membershipEnd: endDate,
+          status: 'active',
+        }),
+      });
+
+      if (!memberRes.ok) throw new Error('Failed to update membership');
+
+      const paymentRes = await fetch('/api/payments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          memberId,
+          memberName: member.fullName,
+          branchId: member.branchId,
+          amount: pkg.price,
+          packageId,
+          packageName: pkg.name,
+          method: 'Cash',
+        }),
+      });
+
+      if (!paymentRes.ok) throw new Error('Failed to record payment');
+
+      await loadMemberData();
+    } catch (err) {
+      console.error('Failed to renew membership:', err);
+      alert(err.message || 'Error renewing membership');
+    }
+  };
+
+  const branch = member?.branch;
+  const memberPayments = member?.payments || [];
 
   const paymentHistoryColDefs = useMemo(() => [
     {
@@ -66,6 +135,20 @@ export default function MemberDetailPage({ params }) {
       }
     }
   ], []);
+
+  if (loading) {
+    return (
+      <>
+        <Header title="Loading..." />
+        <div className="dashboard-content">
+          <div className="empty-state">
+            <div className="spinner" />
+            <h3>Loading Member Profile</h3>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   if (!member) {
     return (
@@ -146,7 +229,7 @@ export default function MemberDetailPage({ params }) {
                 {isExpired && (
                   <button
                     className="btn btn-success btn-block"
-                    onClick={() => renewMembership(member.id, member.packageId)}
+                    onClick={() => handleRenew(member.id, member.packageId)}
                   >
                     <RefreshCw size={16} />
                     Renew Membership

@@ -1,7 +1,6 @@
 'use client';
 
-import { useMemo, useState, useRef, useCallback } from 'react';
-import { useData } from '@/context/DataContext';
+import { useMemo, useState, useRef, useCallback, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import Header from '@/components/Header';
 import { formatCurrency } from '@/utils/formatters';
@@ -239,7 +238,68 @@ function BranchFormModal({ branch, onClose, onSave }) {
 
 // ─── Main Page ──────────────────────────────────────────────────────────────
 export default function BranchesPage() {
-  const { branches, members, staff, payments, addBranch, updateBranch } = useData();
+  const [branches, setBranches] = useState([]);
+  const [members, setMembers] = useState([]);
+  const [staff, setStaff] = useState([]);
+  const [payments, setPayments] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchBranches = useCallback(async () => {
+    try {
+      const res = await fetch('/api/branches');
+      if (res.ok) {
+        const data = await res.json();
+        setBranches(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch branches:', err);
+    }
+  }, []);
+
+  const fetchMembers = useCallback(async () => {
+    try {
+      const res = await fetch('/api/members');
+      if (res.ok) {
+        const data = await res.json();
+        setMembers(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch members:', err);
+    }
+  }, []);
+
+  const fetchStaff = useCallback(async () => {
+    try {
+      const res = await fetch('/api/staff');
+      if (res.ok) {
+        const data = await res.json();
+        setStaff(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch staff:', err);
+    }
+  }, []);
+
+  const fetchPayments = useCallback(async () => {
+    try {
+      const res = await fetch('/api/payments');
+      if (res.ok) {
+        const data = await res.json();
+        setPayments(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch payments:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    async function loadAll() {
+      await Promise.all([fetchBranches(), fetchMembers(), fetchStaff(), fetchPayments()]);
+      setLoading(false);
+    }
+    loadAll();
+  }, [fetchBranches, fetchMembers, fetchStaff, fetchPayments]);
+
   const { isAdmin } = useAuth();
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -275,15 +335,43 @@ export default function BranchesPage() {
     setModalOpen(true);
   }, []);
 
-  const handleSave = useCallback((data) => {
-    if (editingBranch) {
-      updateBranch(editingBranch.id, data);
-    } else {
-      addBranch(data);
+  const handleSave = useCallback(async (data) => {
+    try {
+      const url = editingBranch ? `/api/branches/${editingBranch.id}` : '/api/branches';
+      const method = editingBranch ? 'PUT' : 'POST';
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || 'Failed to save branch');
+      }
+
+      await fetchBranches();
+      setModalOpen(false);
+      setEditingBranch(null);
+    } catch (err) {
+      console.error('Failed to save branch:', err);
+      alert(err.message || 'Error saving branch');
     }
-    setModalOpen(false);
-    setEditingBranch(null);
-  }, [editingBranch, addBranch, updateBranch]);
+  }, [editingBranch, fetchBranches]);
+
+  if (loading) {
+    return (
+      <>
+        <Header title="Branches" subtitle="Branch Management" />
+        <div className="dashboard-content">
+          <div className="empty-state">
+            <div className="spinner" />
+            <h3>Loading Branches...</h3>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>

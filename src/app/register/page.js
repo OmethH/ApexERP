@@ -1,17 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { useData } from '@/context/DataContext';
 import { Dumbbell, Mail, Lock, User, Phone, MapPin, Calendar, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 
 export default function RegisterPage() {
   const router = useRouter();
   const { registerUser, login, loading: authLoading } = useAuth();
-  const { branches, packages, addMember } = useData();
-
+  
+  const [branches, setBranches] = useState([]);
   const [form, setForm] = useState({
     firstName: '',
     lastName: '',
@@ -21,12 +20,33 @@ export default function RegisterPage() {
     gender: 'Male',
     dateOfBirth: '',
     address: '',
-    branchId: branches[0]?.id || '',
-    packageId: packages[1]?.id || '', // Default monthly
+    branchId: '',
   });
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    async function fetchBranches() {
+      try {
+        const res = await fetch('/api/branches');
+        if (res.ok) {
+          const data = await res.json();
+          if (active) {
+            setBranches(data);
+            if (data.length > 0) {
+              setForm(prev => ({ ...prev, branchId: data[0].id }));
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load branches:', err);
+      }
+    }
+    fetchBranches();
+    return () => { active = false; };
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -38,46 +58,37 @@ export default function RegisterPage() {
     setError('');
     setLoading(true);
 
-    const pkg = packages.find(p => p.id === form.packageId);
-    if (!pkg) {
-      setError('Invalid package selected');
-      setLoading(false);
-      return;
-    }
-
     try {
-      // Start date today
-      const startDate = new Date().toISOString().split('T')[0];
-      const endDate = new Date(Date.now() + pkg.duration * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-
-      // Add to membership database
-      const newMember = addMember({
-        firstName: form.firstName,
-        lastName: form.lastName,
-        fullName: `${form.firstName} ${form.lastName}`,
-        email: form.email,
-        phone: form.phone,
-        gender: form.gender,
-        dateOfBirth: form.dateOfBirth,
-        address: form.address,
-        branchId: form.branchId,
-        packageId: form.packageId,
-        packageName: pkg.name,
-        membershipStart: startDate,
-        membershipEnd: endDate,
-        status: 'active',
+      // Add to membership database with pending status (requires admin activation/payment)
+      const res = await fetch('/api/members', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firstName: form.firstName,
+          lastName: form.lastName,
+          fullName: `${form.firstName} ${form.lastName}`,
+          email: form.email,
+          phone: form.phone,
+          gender: form.gender,
+          dateOfBirth: form.dateOfBirth,
+          address: form.address,
+          branchId: form.branchId,
+          status: 'pending',
+        }),
       });
 
-      if (newMember) {
-        // Register credentials dynamically
-        registerUser(form.email, form.password, 'Customer', newMember.id, newMember.fullName, newMember.branchId);
+      const newMember = await res.json();
 
-        // Perform login
-        await login(form.email, form.password);
-        router.push('/dashboard');
-      } else {
-        throw new Error('Failed to create account profile');
+      if (!res.ok) {
+        throw new Error(newMember.error || 'Failed to create account profile');
       }
+
+      // Register credentials dynamically
+      await registerUser(form.email, form.password, 'Customer', newMember.id, newMember.fullName, newMember.branchId);
+
+      // Perform login
+      await login(form.email, form.password);
+      router.push('/dashboard');
     } catch (err) {
       setError(err.message || 'An error occurred during registration');
     } finally {
@@ -317,40 +328,21 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-              <div className="form-group">
-                <label htmlFor="branchId">Select Gym Branch</label>
-                <select
-                  id="branchId"
-                  name="branchId"
-                  value={form.branchId}
-                  onChange={handleChange}
-                  required
-                >
-                  {branches.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.name.replace('Power World ', '')}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="packageId">Select Package Plan</label>
-                <select
-                  id="packageId"
-                  name="packageId"
-                  value={form.packageId}
-                  onChange={handleChange}
-                  required
-                >
-                  {packages.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name} ({p.duration} days) — LKR {p.price}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            <div className="form-group">
+              <label htmlFor="branchId">Select Gym Branch</label>
+              <select
+                id="branchId"
+                name="branchId"
+                value={form.branchId}
+                onChange={handleChange}
+                required
+              >
+                {branches.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name.replace('Power World ', '')}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <button
@@ -365,7 +357,7 @@ export default function RegisterPage() {
                   Creating Account...
                 </>
               ) : (
-                'Register & Buy Plan'
+                'Register Account'
               )}
             </button>
           </form>

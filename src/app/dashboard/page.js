@@ -1,14 +1,13 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { AgGridReact } from 'ag-grid-react';
 import { useAuth } from '@/context/AuthContext';
-import { useData } from '@/context/DataContext';
 import Header from '@/components/Header';
 import StatCard from '@/components/StatCard';
 import Badge from '@/components/Badge';
 import { formatCurrency, formatDate, getInitials } from '@/utils/formatters';
-import { getMonthlyRevenue, getRevenueByBranch, getMembershipDistribution, getMembersByBranch } from '@/data/mockData';
+import { getMonthlyRevenue, getRevenueByBranch, getMembershipDistribution, getMembersByBranch } from '@/utils/dashboard';
 import {
   Users,
   UserCheck,
@@ -52,12 +51,98 @@ function CustomTooltip({ active, payload, label }) {
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const { members, staff = [], payments, stats, branches } = useData();
+
+  const [members, setMembers] = useState([]);
+  const [staff, setStaff] = useState([]);
+  const [payments, setPayments] = useState([]);
+  const [branches, setBranches] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    async function loadData() {
+      try {
+        const [membersRes, staffRes, paymentsRes, branchesRes] = await Promise.all([
+          fetch('/api/members'),
+          fetch('/api/staff'),
+          fetch('/api/payments'),
+          fetch('/api/branches'),
+        ]);
+
+        const [membersData, staffData, paymentsData, branchesData] = await Promise.all([
+          membersRes.json(),
+          staffRes.json(),
+          paymentsRes.json(),
+          branchesRes.json(),
+        ]);
+
+        if (active) {
+          setMembers(Array.isArray(membersData) ? membersData : []);
+          setStaff(Array.isArray(staffData) ? staffData : []);
+          setPayments(Array.isArray(paymentsData) ? paymentsData : []);
+          setBranches(Array.isArray(branchesData) ? branchesData : []);
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error('Failed to load dashboard data:', err);
+      }
+    }
+    loadData();
+    return () => { active = false; };
+  }, []);
+
+  const stats = useMemo(() => {
+    const now = new Date();
+    const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastMonthKey = `${lastMonth.getFullYear()}-${String(lastMonth.getMonth() + 1).padStart(2, '0')}`;
+
+    const activeMembers = members.filter(m => m.status === 'active').length;
+    const expiredMembers = members.filter(m => m.status === 'expired').length;
+    const pendingMembers = members.filter(m => m.status === 'pending').length;
+
+    const thisMonthRevenue = payments
+      .filter(p => p.date && p.date.startsWith(thisMonth))
+      .reduce((sum, p) => sum + p.amount, 0);
+
+    const lastMonthRevenue = payments
+      .filter(p => p.date && p.date.startsWith(lastMonthKey))
+      .reduce((sum, p) => sum + p.amount, 0);
+
+    const revenueTrend = lastMonthRevenue > 0
+      ? ((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue * 100).toFixed(1)
+      : 0;
+
+    const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const expiringSoon = members.filter(m => {
+      const endDate = new Date(m.membershipEnd);
+      return endDate >= now && endDate <= sevenDaysFromNow && m.status === 'active';
+    });
+
+    const recentRegistrations = [...members]
+      .sort((a, b) => new Date(b.joinDate) - new Date(a.joinDate))
+      .slice(0, 10);
+
+    return {
+      totalMembers: members.length,
+      activeMembers,
+      expiredMembers,
+      pendingMembers,
+      totalStaff: staff.length,
+      totalBranches: branches.length,
+      thisMonthRevenue,
+      lastMonthRevenue,
+      revenueTrend,
+      totalRevenue: payments.reduce((sum, p) => sum + p.amount, 0),
+      expiringSoon,
+      recentRegistrations,
+    };
+  }, [members, staff, payments, branches]);
 
   const monthlyRevenue = useMemo(() => getMonthlyRevenue(payments), [payments]);
-  const revenueByBranch = useMemo(() => getRevenueByBranch(payments), [payments]);
+  const revenueByBranch = useMemo(() => getRevenueByBranch(payments, branches), [payments, branches]);
   const memberDist = useMemo(() => getMembershipDistribution(members), [members]);
-  const membersByBranch = useMemo(() => getMembersByBranch(members), [members]);
+  const membersByBranch = useMemo(() => getMembersByBranch(members, branches), [members, branches]);
 
   // --- Admin columns ---
   const recentColDefs = useMemo(() => [

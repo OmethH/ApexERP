@@ -1,7 +1,6 @@
 'use client';
 
-import { useMemo, useState, useCallback } from 'react';
-import { useData } from '@/context/DataContext';
+import { useMemo, useState, useCallback, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import Header from '@/components/Header';
 import { formatCurrency } from '@/utils/formatters';
@@ -449,9 +448,56 @@ function PackageFormModal({ pkg, branches, onClose, onSave }) {
   );
 }
 
-// ─── Main Packages Page ─────────────────────────────────────────────────────
 export default function PackagesPage() {
-  const { packages, branches, members, addPackage, updatePackage, deletePackage } = useData();
+  const [packages, setPackages] = useState([]);
+  const [branches, setBranches] = useState([]);
+  const [members, setMembers] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchPackages = useCallback(async () => {
+    try {
+      const res = await fetch('/api/packages');
+      if (res.ok) {
+        const data = await res.json();
+        setPackages(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch packages:', err);
+    }
+  }, []);
+
+  const fetchBranches = useCallback(async () => {
+    try {
+      const res = await fetch('/api/branches');
+      if (res.ok) {
+        const data = await res.json();
+        setBranches(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch branches:', err);
+    }
+  }, []);
+
+  const fetchMembers = useCallback(async () => {
+    try {
+      const res = await fetch('/api/members');
+      if (res.ok) {
+        const data = await res.json();
+        setMembers(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch members:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    async function loadAll() {
+      await Promise.all([fetchPackages(), fetchBranches(), fetchMembers()]);
+      setLoading(false);
+    }
+    loadAll();
+  }, [fetchPackages, fetchBranches, fetchMembers]);
+
   const { isAdmin } = useAuth();
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -488,25 +534,60 @@ export default function PackagesPage() {
   const openEdit = useCallback((pkg) => { setEditingPkg(pkg); setModalOpen(true); }, []);
   const openDelete = useCallback((pkg) => { setDeleteTarget(pkg); }, []);
 
-  const handleSave = useCallback((data) => {
-    if (editingPkg) {
-      updatePackage(editingPkg.id, data);
-    } else {
-      addPackage(data);
-    }
-    setModalOpen(false);
-    setEditingPkg(null);
-  }, [editingPkg, addPackage, updatePackage]);
+  const handleSave = useCallback(async (data) => {
+    try {
+      const url = editingPkg ? `/api/packages/${editingPkg.id}` : '/api/packages';
+      const method = editingPkg ? 'PUT' : 'POST';
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
 
-  const handleDelete = useCallback(() => {
-    if (deleteTarget) {
-      deletePackage(deleteTarget.id);
-      setDeleteTarget(null);
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || 'Failed to save package');
+      }
+
+      await fetchPackages();
+      setModalOpen(false);
+      setEditingPkg(null);
+    } catch (err) {
+      console.error('Failed to save package:', err);
+      alert(err.message || 'Error saving package');
     }
-  }, [deleteTarget, deletePackage]);
+  }, [editingPkg, fetchPackages]);
+
+  const handleDelete = useCallback(async () => {
+    if (deleteTarget) {
+      try {
+        const res = await fetch(`/api/packages/${deleteTarget.id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Failed to delete package');
+        await fetchPackages();
+        setDeleteTarget(null);
+      } catch (err) {
+        console.error('Failed to delete package:', err);
+        alert(err.message || 'Error deleting package');
+      }
+    }
+  }, [deleteTarget, fetchPackages]);
 
   const activeCount = packages.filter(p => p.status === 'active').length;
   const inactiveCount = packages.filter(p => p.status === 'inactive').length;
+
+  if (loading) {
+    return (
+      <>
+        <Header title="Packages" subtitle="Membership Package Management" />
+        <div className="dashboard-content">
+          <div className="empty-state">
+            <div className="spinner" />
+            <h3>Loading Packages...</h3>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>

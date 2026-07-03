@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { AgGridReact } from 'ag-grid-react';
-import { useData } from '@/context/DataContext';
 import Header from '@/components/Header';
 import StatCard from '@/components/StatCard';
 import Badge from '@/components/Badge';
@@ -13,7 +12,11 @@ import { Search, Plus, DollarSign, TrendingUp, CreditCard, ChevronLeft, ChevronR
 const ITEMS_PER_PAGE = 12;
 
 export default function PaymentsPage() {
-  const { payments, members, branches, packages, addPayment } = useData();
+  const [payments, setPayments] = useState([]);
+  const [members, setMembers] = useState([]);
+  const [branches, setBranches] = useState([]);
+  const [packages, setPackages] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [branchFilter, setBranchFilter] = useState('all');
   const [methodFilter, setMethodFilter] = useState('all');
@@ -24,6 +27,62 @@ export default function PaymentsPage() {
     memberId: '', amount: '', packageId: '', method: 'Cash',
   });
 
+  const fetchPayments = useCallback(async () => {
+    try {
+      const res = await fetch('/api/payments');
+      if (res.ok) {
+        const data = await res.json();
+        setPayments(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch payments:', err);
+    }
+  }, []);
+
+  const fetchMembers = useCallback(async () => {
+    try {
+      const res = await fetch('/api/members');
+      if (res.ok) {
+        const data = await res.json();
+        setMembers(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch members:', err);
+    }
+  }, []);
+
+  const fetchBranches = useCallback(async () => {
+    try {
+      const res = await fetch('/api/branches');
+      if (res.ok) {
+        const data = await res.json();
+        setBranches(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch branches:', err);
+    }
+  }, []);
+
+  const fetchPackages = useCallback(async () => {
+    try {
+      const res = await fetch('/api/packages');
+      if (res.ok) {
+        const data = await res.json();
+        setPackages(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch packages:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    async function loadAll() {
+      await Promise.all([fetchPayments(), fetchMembers(), fetchBranches(), fetchPackages()]);
+      setLoading(false);
+    }
+    loadAll();
+  }, [fetchPayments, fetchMembers, fetchBranches, fetchPackages]);
+
   // Revenue stats
   const revenueStats = useMemo(() => {
     const now = new Date();
@@ -31,8 +90,8 @@ export default function PaymentsPage() {
     const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const lastMonthKey = `${lastMonth.getFullYear()}-${String(lastMonth.getMonth() + 1).padStart(2, '0')}`;
 
-    const thisMonthRevenue = payments.filter(p => p.date.startsWith(thisMonth)).reduce((sum, p) => sum + p.amount, 0);
-    const lastMonthRevenue = payments.filter(p => p.date.startsWith(lastMonthKey)).reduce((sum, p) => sum + p.amount, 0);
+    const thisMonthRevenue = payments.filter(p => p.date && p.date.startsWith(thisMonth)).reduce((sum, p) => sum + p.amount, 0);
+    const lastMonthRevenue = payments.filter(p => p.date && p.date.startsWith(lastMonthKey)).reduce((sum, p) => sum + p.amount, 0);
     const totalRevenue = payments.reduce((sum, p) => sum + p.amount, 0);
 
     return { thisMonthRevenue, lastMonthRevenue, totalRevenue, totalTransactions: payments.length };
@@ -127,24 +186,53 @@ export default function PaymentsPage() {
       }
     }
   ], [branches]);
-
-  const handleAddPayment = () => {
+  const handleAddPayment = async () => {
     const member = members.find(m => m.id === form.memberId);
     const pkg = packages.find(p => p.id === form.packageId);
     if (!member) return;
 
-    addPayment({
-      memberId: member.id,
-      memberName: member.fullName,
-      branchId: member.branchId,
-      amount: parseInt(form.amount) || pkg?.price || 0,
-      packageId: form.packageId,
-      packageName: pkg?.name || 'Custom',
-      method: form.method,
-    });
-    setShowAddModal(false);
-    setForm({ memberId: '', amount: '', packageId: '', method: 'Cash' });
+    try {
+      const res = await fetch('/api/payments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          memberId: member.id,
+          memberName: member.fullName,
+          branchId: member.branchId,
+          amount: parseInt(form.amount) || pkg?.price || 0,
+          packageId: form.packageId,
+          packageName: pkg?.name || 'Custom',
+          method: form.method,
+        }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || 'Failed to record payment');
+      }
+
+      await fetchPayments();
+      setShowAddModal(false);
+      setForm({ memberId: '', amount: '', packageId: '', method: 'Cash' });
+    } catch (err) {
+      console.error('Failed to add payment:', err);
+      alert(err.message || 'Error recording payment');
+    }
   };
+
+  if (loading) {
+    return (
+      <>
+        <Header title="Payments" subtitle="Financial Management" />
+        <div className="dashboard-content">
+          <div className="empty-state">
+            <div className="spinner" />
+            <h3>Loading Payments...</h3>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>

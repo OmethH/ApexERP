@@ -1,8 +1,7 @@
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { useData } from '@/context/DataContext';
 import Header from '@/components/Header';
 import Badge from '@/components/Badge';
 import { formatDate, formatCurrency } from '@/utils/formatters';
@@ -167,11 +166,54 @@ function PurchaseModal({ pkg, branches, onConfirm, onCancel }) {
 
 export default function MembershipPage() {
   const { user } = useAuth();
-  const { members, payments, packages, renewMembership, addMember, addPayment, branches } = useData();
-  const [selectedPkg, setSelectedPkg] = useState(packages[1]?.id || '');
+  
+  const [members, setMembers] = useState([]);
+  const [payments, setPayments] = useState([]);
+  const [packages, setPackages] = useState([]);
+  const [branches, setBranches] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const [selectedPkg, setSelectedPkg] = useState('');
   const [renewSuccess, setRenewSuccess] = useState(false);
   const [activeTab, setActiveTab] = useState('status'); // 'status' or 'buy'
   const [selectedPurchasePkg, setSelectedPurchasePkg] = useState(null);
+
+  const fetchAllData = useCallback(async () => {
+    try {
+      const [membersRes, paymentsRes, packagesRes, branchesRes] = await Promise.all([
+        fetch('/api/members'),
+        fetch('/api/payments'),
+        fetch('/api/packages'),
+        fetch('/api/branches'),
+      ]);
+
+      const [membersData, paymentsData, packagesData, branchesData] = await Promise.all([
+        membersRes.json(),
+        paymentsRes.json(),
+        packagesRes.json(),
+        branchesRes.json(),
+      ]);
+
+      setMembers(Array.isArray(membersData) ? membersData : []);
+      setPayments(Array.isArray(paymentsData) ? paymentsData : []);
+      
+      const pkgs = Array.isArray(packagesData) ? packagesData : [];
+      setPackages(pkgs);
+      if (pkgs.length > 1 && !selectedPkg) {
+        setSelectedPkg(pkgs[1].id);
+      }
+
+      setBranches(Array.isArray(branchesData) ? branchesData : []);
+      setLoading(false);
+    } catch (err) {
+      console.error('Failed to load membership page data:', err);
+      setLoading(false);
+    }
+  }, [selectedPkg]);
+
+  useEffect(() => {
+    fetchAllData();
+  }, [fetchAllData]);
 
   // Get current member/customer record
   const currentCustomer = useMemo(() => {
@@ -182,10 +224,10 @@ export default function MembershipPage() {
 
   // Automatically show the "Buy Membership" tab if they don't have any membership plan
   useEffect(() => {
-    if (hasNoMembership) {
+    if (hasNoMembership && !loading) {
       setActiveTab('buy');
     }
-  }, [hasNoMembership]);
+  }, [hasNoMembership, loading]);
 
   // Payments for this customer
   const customerPayments = useMemo(() => {
@@ -222,68 +264,178 @@ export default function MembershipPage() {
     return membershipStats.isExpired || membershipStats.daysRemaining <= 7;
   }, [hasNoMembership, membershipStats]);
 
-  const handleRenew = (e) => {
+  const handleRenew = async (e) => {
     e.preventDefault();
     if (!currentCustomer || !selectedPkg) return;
 
-    renewMembership(currentCustomer.id, selectedPkg);
-    setRenewSuccess(true);
-    setTimeout(() => {
-      setRenewSuccess(false);
-    }, 4000);
+    const pkg = packages.find(p => p.id === selectedPkg);
+    if (!pkg) return;
+
+    const startDate = new Date().toISOString().split('T')[0];
+    const durationDays = pkg.duration || 30;
+    const endDate = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    try {
+      const memberRes = await fetch(`/api/members/${currentCustomer.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          packageId: selectedPkg,
+          packageName: pkg.name,
+          membershipStart: startDate,
+          membershipEnd: endDate,
+          status: 'active',
+        }),
+      });
+
+      if (!memberRes.ok) throw new Error('Failed to update membership');
+
+      const paymentRes = await fetch('/api/payments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          memberId: currentCustomer.id,
+          memberName: currentCustomer.fullName,
+          branchId: currentCustomer.branchId,
+          amount: pkg.price,
+          packageId: selectedPkg,
+          packageName: pkg.name,
+          method: 'Cash',
+        }),
+      });
+
+      if (!paymentRes.ok) throw new Error('Failed to record payment');
+
+      await fetchAllData();
+      setRenewSuccess(true);
+      setTimeout(() => {
+        setRenewSuccess(false);
+      }, 4000);
+    } catch (err) {
+      console.error('Failed to renew membership:', err);
+      alert(err.message || 'Error renewing membership');
+    }
   };
 
-  const handlePurchase = (paymentMethod) => {
+  const handlePurchase = async (paymentMethod) => {
     if (!selectedPurchasePkg) return;
 
     let memberId = currentCustomer?.id;
 
-    // Auto-create member record if currentCustomer is null
-    if (!memberId && user) {
-      const startDate = new Date().toISOString().split('T')[0];
-      const durationDays = selectedPurchasePkg.duration || 30;
-      const endDate = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    try {
+      if (!memberId && user) {
+        const startDate = new Date().toISOString().split('T')[0];
+        const durationDays = selectedPurchasePkg.duration || 30;
+        const endDate = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-      const newM = addMember({
-        firstName: user.name.split(' ')[0] || user.name,
-        lastName: user.name.split(' ').slice(1).join(' ') || '',
-        fullName: user.name,
-        email: user.email,
-        phone: '+94 77 123 4567',
-        gender: 'Male',
-        dateOfBirth: '1995-01-01',
-        address: 'Colombo, Sri Lanka',
-        branchId: user.branchId || branches[0]?.id || 'BR001',
-        packageId: selectedPurchasePkg.id,
-        packageName: selectedPurchasePkg.name,
-        membershipStart: startDate,
-        membershipEnd: endDate,
-        status: 'active',
-      });
-      memberId = newM.id;
+        const memberRes = await fetch('/api/members', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            firstName: user.name.split(' ')[0] || user.name,
+            lastName: user.name.split(' ').slice(1).join(' ') || '',
+            fullName: user.name,
+            email: user.email,
+            phone: '+94 77 123 4567',
+            gender: 'Male',
+            dateOfBirth: '1995-01-01',
+            address: 'Colombo, Sri Lanka',
+            branchId: user.branchId || branches[0]?.id || 'BR001',
+            packageId: selectedPurchasePkg.id,
+            packageName: selectedPurchasePkg.name,
+            membershipStart: startDate,
+            membershipEnd: endDate,
+            status: 'active',
+          }),
+        });
 
-      // Record payment for newly created membership
-      addPayment({
-        memberId: newM.id,
-        memberName: newM.fullName,
-        branchId: newM.branchId,
-        amount: selectedPurchasePkg.price,
-        packageId: selectedPurchasePkg.id,
-        packageName: selectedPurchasePkg.name,
-        method: paymentMethod,
-      });
-    } else {
-      renewMembership(memberId, selectedPurchasePkg.id, paymentMethod);
+        if (!memberRes.ok) {
+          const errData = await memberRes.json();
+          throw new Error(errData.error || 'Failed to auto-create member record');
+        }
+
+        const newM = await memberRes.json();
+        memberId = newM.id;
+
+        const paymentRes = await fetch('/api/payments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            memberId: newM.id,
+            memberName: newM.fullName,
+            branchId: newM.branchId,
+            amount: selectedPurchasePkg.price,
+            packageId: selectedPurchasePkg.id,
+            packageName: selectedPurchasePkg.name,
+            method: paymentMethod,
+          }),
+        });
+
+        if (!paymentRes.ok) throw new Error('Failed to record payment');
+      } else {
+        const pkg = selectedPurchasePkg;
+        const startDate = new Date().toISOString().split('T')[0];
+        const durationDays = pkg.duration || 30;
+        const endDate = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+        const memberRes = await fetch(`/api/members/${memberId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            packageId: pkg.id,
+            packageName: pkg.name,
+            membershipStart: startDate,
+            membershipEnd: endDate,
+            status: 'active',
+          }),
+        });
+
+        if (!memberRes.ok) throw new Error('Failed to update membership package');
+
+        const paymentRes = await fetch('/api/payments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            memberId,
+            memberName: currentCustomer.fullName,
+            branchId: currentCustomer.branchId,
+            amount: pkg.price,
+            packageId: pkg.id,
+            packageName: pkg.name,
+            method: paymentMethod,
+          }),
+        });
+
+        if (!paymentRes.ok) throw new Error('Failed to record payment');
+      }
+
+      await fetchAllData();
+      setRenewSuccess(true);
+      setSelectedPurchasePkg(null);
+      setActiveTab('status');
+
+      setTimeout(() => {
+        setRenewSuccess(false);
+      }, 4000);
+    } catch (err) {
+      console.error('Failed to handle purchase:', err);
+      alert(err.message || 'Error processing purchase');
     }
-
-    setRenewSuccess(true);
-    setSelectedPurchasePkg(null);
-    setActiveTab('status'); // Auto switch back to status tab
-
-    setTimeout(() => {
-      setRenewSuccess(false);
-    }, 4000);
   };
+
+  if (loading) {
+    return (
+      <>
+        <Header title="My Membership" subtitle="Manage Plan & Payments" />
+        <div className="dashboard-content">
+          <div className="empty-state">
+            <div className="spinner" />
+            <h3>Loading Membership Details...</h3>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   // --- TRAINER VIEW ---
   if (user?.role === 'Trainer') {

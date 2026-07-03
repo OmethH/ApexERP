@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { useData } from '@/context/DataContext';
 import Header from '@/components/Header';
 import Badge from '@/components/Badge';
 import Modal from '@/components/Modal';
@@ -28,14 +27,109 @@ import {
 
 export default function InquiriesPage() {
   const { user } = useAuth();
-  const {
-    inquiries = [],
-    addInquiry,
-    addInquiryMessage,
-    updateInquiryStatus,
-    members = [],
-    branches = []
-  } = useData();
+  
+  const [inquiries, setInquiries] = useState([]);
+  const [members, setMembers] = useState([]);
+  const [branches, setBranches] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Load initial data from API and LocalStorage
+  useEffect(() => {
+    let active = true;
+    async function loadData() {
+      const savedInquiries = localStorage.getItem('pw_inquiries');
+      if (savedInquiries) {
+        setInquiries(JSON.parse(savedInquiries));
+      }
+
+      try {
+        const [membersRes, branchesRes] = await Promise.all([
+          fetch('/api/members'),
+          fetch('/api/branches')
+        ]);
+        if (membersRes.ok && branchesRes.ok) {
+          const membersData = await membersRes.json();
+          const branchesData = await branchesRes.json();
+          if (active) {
+            setMembers(Array.isArray(membersData) ? membersData : []);
+            setBranches(Array.isArray(branchesData) ? branchesData : []);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load inquiries references:', err);
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+    loadData();
+    return () => { active = false; };
+  }, []);
+
+  // Save inquiries to localStorage
+  useEffect(() => {
+    localStorage.setItem('pw_inquiries', JSON.stringify(inquiries));
+  }, [inquiries]);
+
+  // Local implementations of inquiry mutators
+  const addInquiry = (memberId, memberName, subject, content, senderId, senderRole) => {
+    const newInquiry = {
+      id: `INQ${String(inquiries.length + 1).padStart(3, '0')}`,
+      memberId,
+      memberName,
+      subject,
+      status: senderRole === 'Customer' ? 'sent' : 'open',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      messages: [
+        {
+          id: `MSG${String(Date.now())}`,
+          senderId,
+          senderName: memberName,
+          senderRole,
+          content,
+          timestamp: new Date().toISOString()
+        }
+      ]
+    };
+    setInquiries(prev => [newInquiry, ...prev]);
+    return newInquiry;
+  };
+
+  const addInquiryMessage = (inquiryId, senderId, senderName, senderRole, content) => {
+    setInquiries(prev => prev.map(inq => {
+      if (inq.id === inquiryId) {
+        const newMsg = {
+          id: `MSG${String(Date.now())}`,
+          senderId,
+          senderName,
+          senderRole,
+          content,
+          timestamp: new Date().toISOString()
+        };
+        const newStatus = (senderRole === 'Admin' || senderRole === 'Manager' || senderRole === 'Staff') ? 'replied' : 'sent';
+        return {
+          ...inq,
+          status: newStatus,
+          updatedAt: new Date().toISOString(),
+          messages: [...inq.messages, newMsg]
+        };
+      }
+      return inq;
+    }));
+  };
+
+  const updateInquiryStatus = (inquiryId, status) => {
+    setInquiries(prev => prev.map(inq => {
+      if (inq.id === inquiryId) {
+        return {
+          ...inq,
+          status,
+          updatedAt: new Date().toISOString()
+        };
+      }
+      return inq;
+    }));
+  };
 
   // Common UI State
   const [selectedInquiryId, setSelectedInquiryId] = useState(null);

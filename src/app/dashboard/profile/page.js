@@ -1,8 +1,7 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { useData } from '@/context/DataContext';
 import Header from '@/components/Header';
 import Badge from '@/components/Badge';
 import { formatDate, getInitials } from '@/utils/formatters';
@@ -10,7 +9,40 @@ import { Mail, Phone, MapPin, Calendar, Building2, Shield, User } from 'lucide-r
 
 export default function ProfilePage() {
   const { user } = useAuth();
-  const { members, staff = [], branches } = useData();
+  const [members, setMembers] = useState([]);
+  const [staff, setStaff] = useState([]);
+  const [branches, setBranches] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    async function loadData() {
+      try {
+        const [membersRes, staffRes, branchesRes] = await Promise.all([
+          fetch('/api/members'),
+          fetch('/api/staff'),
+          fetch('/api/branches'),
+        ]);
+
+        const [membersData, staffData, branchesData] = await Promise.all([
+          membersRes.json(),
+          staffRes.json(),
+          branchesRes.json(),
+        ]);
+
+        if (active) {
+          setMembers(Array.isArray(membersData) ? membersData : []);
+          setStaff(Array.isArray(staffData) ? staffData : []);
+          setBranches(Array.isArray(branchesData) ? branchesData : []);
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error('Failed to load profile data:', err);
+      }
+    }
+    loadData();
+    return () => { active = false; };
+  }, []);
 
   // Find detailed record based on role
   const profileDetails = useMemo(() => {
