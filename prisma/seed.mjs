@@ -196,14 +196,14 @@ function generatePaymentsData(members) {
 // ─── Users (only Admin, Manager, non-Trainer Staff) ─────────
 const usersData = [
   { id: 'USR001', name: 'Admin User', email: 'admin@powerworld.com', password: 'admin123', role: 'Admin', branchId: null, staffId: null },
-  { id: 'USR002', name: 'Ruwan Perera', email: 'manager@powerworld.com', password: 'manager123', role: 'Manager', branchId: 'BR001', staffId: 'STF001' },
-  { id: 'USR003', name: 'Kasun Fernando', email: 'staff@powerworld.com', password: 'staff123', role: 'Staff', branchId: 'BR001', staffId: 'STF003' },
+  { id: 'USR002', name: 'Ruwan Perera', email: 'manager@powerworld.com', password: 'manager123', role: 'Manager', branchId: 'BR001', staffId: null },
+  { id: 'USR003', name: 'Kasun Fernando', email: 'staff@powerworld.com', password: 'staff123', role: 'Staff', branchId: 'BR001', staffId: null },
 ];
 
 
 // ─── MAIN SEED ──────────────────────────────────────────────
 async function main() {
-  console.log('🌱 Starting database seed...');
+  console.log('🌱 Starting database seed (Clean mode)...');
 
   // Clear tables in reverse dependency order
   await prisma.payment.deleteMany();
@@ -224,58 +224,13 @@ async function main() {
   }
   console.log(`  ✓ Seeded ${branchesData.length} branches`);
 
-  // Seed packages
-  for (const p of packagesData) {
-    await prisma.package.create({ data: p });
-  }
-  console.log(`  ✓ Seeded ${packagesData.length} packages`);
-
-  // Seed members
-  const membersData = generateMembersData();
-  for (const m of membersData) {
-    await prisma.member.create({ data: m });
-  }
-  console.log(`  ✓ Seeded ${membersData.length} members`);
-
-  // Seed staff & trainers separately
-  const { staff, trainers } = generateStaffAndTrainersData();
-  
-  for (const s of staff) {
-    await prisma.staff.create({ data: s });
-  }
-  console.log(`  ✓ Seeded ${staff.length} general staff members`);
-
-  for (const t of trainers) {
-    await prisma.trainer.create({ data: t });
-  }
-  console.log(`  ✓ Seeded ${trainers.length} trainers`);
-
-  // Seed payments
-  const paymentsData = generatePaymentsData(membersData);
-  for (const p of paymentsData) {
-    await prisma.payment.create({ data: p });
-  }
-  console.log(`  ✓ Seeded ${paymentsData.length} payments`);
-
   // Seed users (Admin, Manager, non-Trainer Staff)
   for (const u of usersData) {
     await prisma.user.create({ data: u });
   }
   console.log(`  ✓ Seeded ${usersData.length} system user accounts`);
 
-  // Seed questions
-  for (const q of initialQuestions) {
-    await prisma.question.create({ data: q });
-  }
-  console.log(`  ✓ Seeded ${initialQuestions.length} questions`);
-
-  // Seed submissions
-  for (const s of initialSubmissions) {
-    await prisma.submission.create({ data: s });
-  }
-  console.log(`  ✓ Seeded ${initialSubmissions.length} submissions`);
-
-  console.log('🎉 Database seed complete!');
+  console.log('🎉 Database seed complete (Branches & Users only)!');
 }
 
 main()
