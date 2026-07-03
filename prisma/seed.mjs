@@ -230,7 +230,13 @@ async function main() {
   }
   console.log(`  ✓ Seeded ${usersData.length} system user accounts`);
 
-  console.log('🎉 Database seed complete (Branches & Users only)!');
+  // Seed questions
+  for (const q of initialQuestions) {
+    await prisma.question.create({ data: q });
+  }
+  console.log(`  ✓ Seeded ${initialQuestions.length} questions`);
+
+  console.log('🎉 Database seed complete (Branches, Users & Questions only)!');
 }
 
 main()

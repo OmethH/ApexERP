@@ -272,7 +272,7 @@ export default function QuestionnaireWizard({ user, questions, onSubmit }) {
               <button
                 type="submit"
                 className="btn btn-success"
-                style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--success)' }}
+                style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--success)', color: 'white' }}
               >
                 Submit & Continue <CheckCircle2 size={16} />
               </button>
