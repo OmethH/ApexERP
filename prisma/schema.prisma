@@ -75,6 +75,7 @@ model Member {
   package     Package? @relation(fields: [packageId], references: [id])
 
   payments Payment[]
+  submissions Submission[]
 }
 
 // ─── Staff ────────────────────────────────────────────────
@@ -145,4 +146,25 @@ model User {
 
   staffId  String?  @unique
   staff    Staff?   @relation(fields: [staffId], references: [id])
+}
+
+// ─── Question ──────────────────────────────────────────────
+model Question {
+  id       String  @id
+  section  String
+  text     String
+  type     String  // text, yes_no, choice, checkboxes
+  options  Json?   // Optional array of choices/options
+  required Boolean
+}
+
+// ─── Submission ─────────────────────────────────────────────
+model Submission {
+  id          String   @id
+  memberId    String
+  member      Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  memberName  String
+  email       String
+  submittedAt String
+  answers     Json     // maps questionId -> answer
 }

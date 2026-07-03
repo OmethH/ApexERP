@@ -173,17 +173,18 @@ const usersData = [
 ];
 
 
-// ─── MAIN SEED ──────────────────────────────────────────────
 async function main() {
   console.log('🌱 Starting database seed...');
 
   // Clear tables in reverse dependency order
   await prisma.payment.deleteMany();
+  await prisma.submission.deleteMany();
   await prisma.user.deleteMany();
   await prisma.member.deleteMany();
   await prisma.staff.deleteMany();
   await prisma.package.deleteMany();
   await prisma.branch.deleteMany();
+  await prisma.question.deleteMany();
 
   console.log('  ✓ Cleared existing data');
 
@@ -226,8 +227,211 @@ async function main() {
   }
   console.log(`  ✓ Seeded ${usersData.length} users`);
 
+  // Seed questions
+  for (const q of initialQuestions) {
+    await prisma.question.create({ data: q });
+  }
+  console.log(`  ✓ Seeded ${initialQuestions.length} questions`);
+
+  // Seed submissions
+  for (const s of initialSubmissions) {
+    await prisma.submission.create({ data: s });
+  }
+  console.log(`  ✓ Seeded ${initialSubmissions.length} submissions`);
+
   console.log('🎉 Database seed complete!');
 }
+// --- Initial Mock Questionnaire Questions ---
+export const initialQuestions = [
+  {
+    id: 'Q001',
+    section: 'Emergency Contact',
+    text: 'Emergency Contact Name:',
+    type: 'text',
+    required: true
+  },
+  {
+    id: 'Q002',
+    section: 'Emergency Contact',
+    text: 'Relationship to Member:',
+    type: 'text',
+    required: true
+  },
+  {
+    id: 'Q003',
+    section: 'Emergency Contact',
+    text: 'Emergency Contact Phone Number:',
+    type: 'text',
+    required: true
+  },
+  {
+    id: 'Q004',
+    section: 'Health & Medical Readiness',
+    text: 'Has your doctor ever said that you have a heart condition and that you should only perform physical activity recommended by a doctor?',
+    type: 'yes_no',
+    required: true
+  },
+  {
+    id: 'Q005',
+    section: 'Health & Medical Readiness',
+    text: 'Do you feel pain in your chest when you perform physical activity?',
+    type: 'yes_no',
+    required: true
+  },
+  {
+    id: 'Q006',
+    section: 'Health & Medical Readiness',
+    text: 'In the past month, have you had chest pain when you were not performing physical activity?',
+    type: 'yes_no',
+    required: true
+  },
+  {
+    id: 'Q007',
+    section: 'Health & Medical Readiness',
+    text: 'Do you ever lose your balance because of dizziness or do you ever lose consciousness?',
+    type: 'yes_no',
+    required: true
+  },
+  {
+    id: 'Q008',
+    section: 'Health & Medical Readiness',
+    text: 'Do you have a bone or joint problem (e.g., back, knee, or hip) that could be made worse by a change in your physical activity?',
+    type: 'yes_no',
+    required: true
+  },
+  {
+    id: 'Q009',
+    section: 'Health & Medical Readiness',
+    text: 'Are you currently taking any prescribed medications for your blood pressure or a heart condition?',
+    type: 'yes_no',
+    required: true
+  },
+  {
+    id: 'Q010',
+    section: 'Health & Medical Readiness',
+    text: 'Are you pregnant or have you given birth in the last 6 months?',
+    type: 'yes_no',
+    required: true
+  },
+  {
+    id: 'Q011',
+    section: 'Health & Medical Readiness',
+    text: 'Do you know of any other reason why you should not engage in physical activity?',
+    type: 'yes_no',
+    required: true
+  },
+  {
+    id: 'Q012',
+    section: 'Health & Medical Readiness',
+    text: 'If you answered YES to any of the above, please explain:',
+    type: 'text',
+    required: false
+  },
+  {
+    id: 'Q013',
+    section: 'Fitness Experience & Goals',
+    text: 'How would you rate your current fitness level?',
+    type: 'choice',
+    options: ['Beginner', 'Intermediate', 'Advanced'],
+    required: true
+  },
+  {
+    id: 'Q014',
+    section: 'Fitness Experience & Goals',
+    text: 'What are your primary fitness goals?',
+    type: 'checkboxes',
+    options: ['Weight loss', 'Muscle gain', 'Cardiovascular health', 'Flexibility & mobility', 'Stress relief', 'Sports performance', 'Other'],
+    required: true
+  },
+  {
+    id: 'Q015',
+    section: 'Fitness Experience & Goals',
+    text: 'Do you have any previous experience with weightlifting or gym equipment?',
+    type: 'yes_no',
+    required: true
+  },
+  {
+    id: 'Q016',
+    section: 'Fitness Experience & Goals',
+    text: 'What are your biggest barriers to reaching your fitness goals?',
+    type: 'text',
+    required: true
+  },
+  {
+    id: 'Q017',
+    section: 'Preferences & Availability',
+    text: 'How many days per week do you plan to use the gym?',
+    type: 'choice',
+    options: ['1-2 days', '3-4 days', '5+ days'],
+    required: true
+  },
+  {
+    id: 'Q018',
+    section: 'Preferences & Availability',
+    text: 'What time of day do you typically plan to work out?',
+    type: 'choice',
+    options: ['Early morning', 'Mid-day', 'Evening', 'Late night'],
+    required: true
+  },
+  {
+    id: 'Q019',
+    section: 'Preferences & Availability',
+    text: 'Are you interested in any of the following services?',
+    type: 'checkboxes',
+    options: ['Personal Training', 'Group Fitness Classes', 'Nutrition Coaching', 'Locker Rentals'],
+    required: false
+  },
+  {
+    id: 'Q020',
+    section: 'Preferences & Availability',
+    text: 'How did you hear about us?',
+    type: 'choice',
+    options: ['Walk-in', 'Referral', 'Social Media', 'Web Search', 'Other'],
+    required: true
+  },
+  {
+    id: 'Q021',
+    section: 'Liability Waiver',
+    text: 'I acknowledge that the information provided is accurate and agree to the gym\'s liability waiver.',
+    type: 'yes_no',
+    required: true
+  }
+];
+
+// --- Initial Mock Submissions ---
+export const initialSubmissions = [
+  {
+    id: 'SUB001',
+    memberId: 'MEM001',
+    memberName: 'Ashan Perera',
+    email: 'customer@powerworld.com',
+    submittedAt: '2026-06-25T10:00:00.000Z',
+    answers: {
+      'Q001': 'Samantha Perera',
+      'Q002': 'Spouse',
+      'Q003': '+94 77 123 4567',
+      'Q004': 'No',
+      'Q005': 'No',
+      'Q006': 'No',
+      'Q007': 'No',
+      'Q008': 'No',
+      'Q009': 'No',
+      'Q010': 'No',
+      'Q011': 'No',
+      'Q012': '',
+      'Q013': 'Intermediate',
+      'Q014': ['Weight loss', 'Muscle gain', 'Cardiovascular health'],
+      'Q015': 'Yes',
+      'Q016': 'Time constraints due to office work.',
+      'Q017': '3-4 days',
+      'Q018': 'Evening',
+      'Q019': ['Personal Training', 'Locker Rentals'],
+      'Q020': 'Social Media',
+      'Q021': 'Yes'
+    }
+  }
+];
+
 
 main()
   .catch((e) => {
